@@ -39,7 +39,7 @@ int * Flatten (int * bitVector, int L){
 }
 
 int rand_ringz(){
-    return (rand() % ((2 * q) + 1)) - q;
+    return (rand() % ((q) + 1)); // (rand() % (upper - lower + 1)) + (lower);
 } 
 
 int * Powersof2(int * vector, int L){
@@ -64,6 +64,40 @@ int * GenerateVector(int size){
     return vector;
 }
 
+int * GenerateErrorVector(int size){
+    int * vector = (int *)malloc(sizeof(int) * size);
+
+    for (int i = 0; i< size; i++){
+        vector[i] = (rand() % (5)) - 2;
+    }
+
+    return vector;
+}
+
+int * MultiplyVectorxMatrix(int * v, int ** matrix, int r, int c){
+    int * result = (int *)malloc(sizeof(int) * r);
+
+    for (int i = 0; i< r; i++){
+        for (int j = 0; j< c; j++){
+            result[i] += v[j] * matrix[i][j];
+        }
+        result[i] = result[i] % q;
+    }
+    return result;
+}
+
+int * SumVector(int * v1, int * v2, int size){
+    int * result = (int *)malloc(sizeof(int) * size);
+
+    for (int i = 0; i< size; i++){
+        result[i] = (v1[i] + v2[i]) % q;
+    }
+
+    return result;
+}
+
+
+
 int ** GenerateMatrix(int  rows, int columns){
     int ** matrix = (int **)malloc(sizeof(int *) * rows);
 
@@ -77,11 +111,15 @@ int ** GenerateMatrix(int  rows, int columns){
     return matrix;
 }
 
-int * SecretKeyGen(){
-    int * s = GenerateVector( K + 1);
-    s[0] = 1;
+int * SecretKeyGen(int * t){
+    int * sk = (int *)malloc(sizeof(int) * (K + 1));
+    for (int i = 1; i < K+1; i++){
+        sk[i] = -t[i-1];
+    }
 
-    return s;
+    sk[0] = 1;
+
+    return sk;
 }
 
 int main()
@@ -92,8 +130,21 @@ int main()
     int N = K * L;
     int m = 8;
 
-    int * secretKey = SecretKeyGen();
+    int * t = GenerateVector(K);
+    int * secretKey = SecretKeyGen(t);
     int * v = Powersof2(secretKey, L);
+    
+    int * error = GenerateErrorVector(m);
+    int ** B = GenerateMatrix(m,K);
+    int * b = SumVector(MultiplyVectorxMatrix(t, B, m, K), error, m);
+
+    for(int h = 0; h < m; h++){
+        printf("error[%d]: %d \n ", h, error[h]);
+    }
+
+    for(int h = 0; h < m; h++){
+        printf("b[%d]: %d \n ", h, b[h]);
+    }
 
     for(int h = 0; h <= K; h++){
         printf("secret key[%d]: %d \n ", h, secretKey[h]);
