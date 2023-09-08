@@ -2,4 +2,4 @@
 
 
 run-local:
-	gcc -g main.c -o main && ./main
+	gcc -g main.c -o main -lm && ./main
