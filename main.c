@@ -6,6 +6,13 @@
 #define q 128
 #define K 8
 
+int mod(int m, int l){
+    if (m<0){
+        return l + (m%l);
+    }
+
+    return m%l;
+}
 
 int * BitDecomp (int * vector, int L){
     int * result = (int *)malloc(sizeof(int) * L * K);
@@ -111,6 +118,30 @@ int ** GenerateMatrix(int  rows, int columns){
     return matrix;
 }
 
+int ** PublicKeyGen(int * t, int m){
+    int * error = GenerateErrorVector(m);
+    int ** B = GenerateMatrix(m,K);
+    int * b = SumVector(MultiplyVectorxMatrix(t, B, m, K), error, m);
+
+    int ** A = (int **)malloc(sizeof(int *) * (m));
+    // set first column
+    for(int k = 0; k < m; k++){
+        A[k] = (int *)malloc(sizeof(int *) * (K + 1));
+        A[k][0] = b[k];
+    }
+
+    // set B
+    for(int i = 0; i < m; i++){
+        for(int j = 1; j < K+1; j++){
+            A[i][j] = B[i][j-1];
+        }
+    }
+
+    // TODO: must free B, b and error
+    return A;
+}
+
+
 int * SecretKeyGen(int * t){
     int * sk = (int *)malloc(sizeof(int) * (K + 1));
     for (int i = 1; i < K+1; i++){
@@ -134,29 +165,22 @@ int main()
     int * secretKey = SecretKeyGen(t);
     int * v = Powersof2(secretKey, L);
     
-    int * error = GenerateErrorVector(m);
-    int ** B = GenerateMatrix(m,K);
-    int * b = SumVector(MultiplyVectorxMatrix(t, B, m, K), error, m);
+    int ** publicKey = PublicKeyGen(t, m); // pubK [m, K+1]
 
-    for(int h = 0; h < m; h++){
-        printf("error[%d]: %d \n ", h, error[h]);
+    int * check = MultiplyVectorxMatrix(secretKey, publicKey, m, K+1); // check must be equal to error as A.s = e
+
+    printf("public key \n");
+    for(int i = 0; i < m; i++){
+        printf("[%d][", i);
+        for(int j = 0; j < K+1; j++){
+            printf("%d ", publicKey[i][j]);
+        }
+        printf("]\n");
     }
-
-    for(int h = 0; h < m; h++){
-        printf("b[%d]: %d \n ", h, b[h]);
+    printf("secret key \n");
+    for(int h = 0; h < K+1; h++){
+        printf("[%d]: %d \n ", h, secretKey[h]);
     }
-
-    for(int h = 0; h <= K; h++){
-        printf("secret key[%d]: %d \n ", h, secretKey[h]);
-    }
-
-    for(int h = 0; h < K * L; h++){
-        printf("v[%d]: %d \n ", h, v[h]);
-    }
-
-    // for(int h = 0; h < N; h++){
-    //     printf("v[%d]: %d \n ", h, v[h]);
-    // }
 
     printf("q: %d, K: %d, L: %d, N: %d", q, K, L, N);
 }
