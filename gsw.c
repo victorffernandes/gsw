@@ -13,6 +13,16 @@ int mod(int m, int l){
     return m%l;
 }
 
+int ** applyRows(int ** matrix, int rows, int columns, int * (*f) (int * v, int n)){
+    int ** result = (int **)malloc(sizeof(int) * rows);
+
+    for (int j = 0; j < rows; j++){
+        result[j] = (*f)(matrix[j], columns);
+    }
+
+    return result;
+}
+
 int * BitDecomp (int * vector, int L){
     int * result = (int *)malloc(sizeof(int) * L * K);
 
@@ -150,4 +160,34 @@ int * SecretKeyGen(int * t){
     sk[0] = 1;
 
     return sk;
+}
+
+int ** GenerateIdentity(int rows, int columns){
+    int ** matrix = (int **)malloc(sizeof(int *) * rows);
+
+    for (int i = 0; i< rows; i++){
+        matrix[i] = (int *)malloc(sizeof(int) * columns);
+        for (int j = 0; j < columns; j++){
+            if(i == j){
+                matrix[i][j] = 1;
+            } else{
+                matrix[i][j] = 0;
+            }
+        }
+    }
+
+    return matrix;
+}
+
+int ** GenerateBinaryMatrix(int rows, int columns){
+    int ** matrix = (int **)malloc(sizeof(int *) * rows);
+
+    for (int i = 0; i< rows; i++){
+        matrix[i] = (int *)malloc(sizeof(int) * columns);
+        for (int j = 0; j < columns; j++){
+            matrix[i][j] =  rand()/  1000000000 ;
+        }
+    }
+
+    return matrix;
 }

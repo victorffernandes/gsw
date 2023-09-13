@@ -12,17 +12,20 @@ int main()
     int * t = GenerateVector(K);
     int * secretKey = SecretKeyGen(t);
     int * v = Powersof2(secretKey, L);
+
+    int ** binm = GenerateBinaryMatrix(m,K+1);
+        for(int i = 0; i < m; i++){
+        printf("BM: [%d][", i);
+        for(int j = 0; j < K+1; j++){
+            printf("%d ", binm[i][j]);
+        }
+        printf("]\n");
+    }
     
     int ** publicKey = PublicKeyGen(t, m); // pubK [m, K+1]
 
-    int * check = MultiplyVectorxMatrix(secretKey, publicKey, m, K+1); // check must be equal to error as A.s = e
+    int ** r = applyRows(publicKey, m, K+1, &BitDecomp);
 
-    printf("check \n");
-    for(int h = 0; h < K+1; h++){
-        printf("[%d]: %d \n ", h, mod(check[h], q));
-    }
-
-    
 
     printf("public key \n");
     for(int i = 0; i < m; i++){
