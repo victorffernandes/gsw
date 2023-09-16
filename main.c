@@ -28,11 +28,6 @@ int main()
 
     int ** C = applyRows(sum, N,N, &Flatten);
 
-    int inth = 7;
-    int ip = InternalProduct(C[inth], v, L);
-
-    int dec = ip / v[inth];
-
     printf("C \n");
     for(int i = 0; i < N; i++){
         printf("[%d][", i);
@@ -96,7 +91,16 @@ int main()
         printf("]\n");
     }
 
-    printf("ip: %d, message: %d \n", ip, dec);
+    printf("message: %d \n", InternalProduct(C[L-1], v, L) / v[L-1]);
+
+    int res[L];
+    for(int j = L-1; j > 0; j--){
+        int ip = InternalProduct(C[j], v, L);
+        int dec = ip / v[j];
+        res[j] = dec;
+        printf("%d ", dec);
+    }
+
 
     printf("q: %d, K: %d, L: %d, N: %d", q, K, L, N);
 }
