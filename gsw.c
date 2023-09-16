@@ -13,8 +13,14 @@ int mod(int m, int l){
     return m%l;
 }
 
+void printVector(int * v, int n){
+    for(int i = 0; i< n; i++){
+        printf("%d ", v[i]);
+    }
+}
+
 int ** applyRows(int ** matrix, int rows, int columns, int * (*f) (int * v, int n)){
-    int ** result = (int **)malloc(sizeof(int) * rows);
+    int ** result = (int **)malloc(sizeof(int * ) * rows);
 
     for (int j = 0; j < rows; j++){
         result[j] = (*f)(matrix[j], columns);
@@ -90,6 +96,29 @@ int * GenerateErrorVector(int size){
     return vector;
 }
 
+int InternalProduct(int * v1, int * v2, int n){
+    int value = 0;
+
+    for(int i = 0; i < n; i++){
+        value += v1[i] * v2[i];
+    }
+
+    return value;
+}
+
+int ** MultiplyMatrixEscalar(int e, int ** matrix, int r, int c){
+    int ** result = (int **)malloc(sizeof(int * ) * r);
+
+    for (int i = 0; i< r; i++){
+        result[i] = (int *)malloc(sizeof(int) * c);
+        for (int j = 0; j < c; j++){
+            result[i][j] = mod(matrix[i][j] * e, q);
+        }
+    }
+
+    return result;
+}
+
 int * MultiplyVectorxMatrix(int * v, int ** matrix, int r, int c){
     int * result = (int *)malloc(sizeof(int) * r);
 
@@ -99,6 +128,37 @@ int * MultiplyVectorxMatrix(int * v, int ** matrix, int r, int c){
         }
         result[i] = result[i] % q;
     }
+    return result;
+}
+
+int ** SumMatrixxMatrix(int ** m1, int ** m2, int r, int c){
+    int ** result = (int **)malloc(sizeof(int * ) * r);
+
+    for (int i = 0; i< r; i++){
+        result[i] = (int *)malloc(sizeof(int) * c);
+        for (int j = 0; j < c; j++){
+            result[i][j] = m1[i][j] + m2[i][j];
+        }
+    }
+
+    return result;
+}
+
+int ** MultiplyMatrixxMatrix(int ** m1, int ** m2, int r1, int c1, int r2, int c2){
+    int ** result = (int **)malloc(sizeof(int * ) * r1);
+
+    for (int i = 0; i< r1; i++){
+        result[i] = (int *)malloc(sizeof(int) * c2);
+        for (int j = 0; j < c2; j++){
+            int sum = 0;
+            for (int z = 0; z < c1; z++){
+                sum += (m1[i][z]) * (m2[z][j]);
+            }
+
+            result[i][j] = mod(sum,q);
+        }
+    }
+
     return result;
 }
 
@@ -185,7 +245,7 @@ int ** GenerateBinaryMatrix(int rows, int columns){
     for (int i = 0; i< rows; i++){
         matrix[i] = (int *)malloc(sizeof(int) * columns);
         for (int j = 0; j < columns; j++){
-            matrix[i][j] =  rand()/  1000000000 ;
+            matrix[i][j] =  rand() % 2 ;// TODO: get int by parameter q
         }
     }
 

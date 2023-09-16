@@ -1,10 +1,9 @@
-
 #include "gsw.c"
+#include <time.h>
 
 int main()
 {
-    srand(4);
-
+    srand(time(NULL));
     int L = log2(q) + 1;
     int N = K * L;
     int m = 8;
@@ -13,32 +12,91 @@ int main()
     int * secretKey = SecretKeyGen(t);
     int * v = Powersof2(secretKey, L);
 
-    int ** binm = GenerateBinaryMatrix(m,K+1);
-        for(int i = 0; i < m; i++){
-        printf("BM: [%d][", i);
-        for(int j = 0; j < K+1; j++){
-            printf("%d ", binm[i][j]);
+    int ** R = GenerateBinaryMatrix(N,m);
+    
+    int ** A = PublicKeyGen(t, m); // pubK [m, K+1]
+
+    int ** RA = (MultiplyMatrixxMatrix(R, A, N, m, m, K+1));
+
+    int ** r = applyRows(RA, N, K+1, &BitDecomp); // r [N, N]
+
+    int ** Identity = GenerateIdentity(N, N);
+
+    int ** mIdentity = MultiplyMatrixEscalar(1, Identity, N,N);
+
+    int ** sum = SumMatrixxMatrix(mIdentity, r, N,N);
+
+    int ** C = applyRows(sum, N,N, &Flatten);
+
+    int inth = 7;
+    int ip = InternalProduct(C[inth], v, L);
+
+    int dec = ip / v[inth];
+
+    printf("C \n");
+    for(int i = 0; i < N; i++){
+        printf("[%d][", i);
+        for(int j = 0; j < N; j++){
+            printf("%d ", C[i][j]);
         }
         printf("]\n");
     }
-    
-    int ** publicKey = PublicKeyGen(t, m); // pubK [m, K+1]
 
-    int ** r = applyRows(publicKey, m, K+1, &BitDecomp);
+    printf("sum \n");
+    for(int i = 0; i < N; i++){
+        printf("[%d][", i);
+        for(int j = 0; j < N; j++){
+            printf("%d ", sum[i][j]);
+        }
+        printf("]\n");
+    }
 
+    printf("mIdentity \n");
+    for(int i = 0; i < N; i++){
+        printf("[%d][", i);
+        for(int j = 0; j < N; j++){
+            printf("%d ", mIdentity[i][j]);
+        }
+        printf("]\n");
+    }
 
-    printf("public key \n");
+    printf("R \n");
+    for(int i = 0; i < N; i++){
+        printf("[%d][", i);
+        for(int j = 0; j < m; j++){
+            printf("%d ", R[i][j]);
+        }
+        printf("]\n");
+    }
+
+    printf("A \n");
     for(int i = 0; i < m; i++){
         printf("[%d][", i);
         for(int j = 0; j < K+1; j++){
-            printf("%d ", publicKey[i][j]);
+            printf("%d ", A[i][j]);
         }
         printf("]\n");
     }
-    printf("secret key \n");
-    for(int h = 0; h < K+1; h++){
-        printf("[%d]: %d \n ", h, secretKey[h]);
+
+    printf("RA \n");
+    for(int i = 0; i < N; i++){
+        printf("[%d][", i);
+        for(int j = 0; j < K+1; j++){
+            printf("%d ", (RA[i][j]));
+        }
+        printf("]\n");
+    }    
+
+    printf("r \n");
+    for(int i = 0; i < N; i++){
+        printf("[%d][", i);
+        for(int j = 0; j < N; j++){
+            printf("%d ", r[i][j]);
+        }
+        printf("]\n");
     }
+
+    printf("ip: %d, message: %d \n", ip, dec);
 
     printf("q: %d, K: %d, L: %d, N: %d", q, K, L, N);
 }
