@@ -2,6 +2,14 @@
 #include <stdlib.h>
 #include "gsw.c"
 
+int assertEqualsVector(int * v1, int * v2, int size){
+    for (int i = 0; i < size; i++){
+        if (v1[i] != v2[i]){
+            return 0;
+        }
+    }
+    return 1;
+}
 
 int TestKeyGen(){
     srand(4);
@@ -23,6 +31,55 @@ int TestKeyGen(){
     }
 
     return 1;
+}
+
+int TestInternalProductPowerof2AndBitDecomp(){
+    srand(4);
+    int L = log2(q) + 1;
+    int N = K * L;
+    int m = 8;
+
+    int * a = GenerateVector(L);
+    int * b = GenerateVector(L);
+    int * BitDecompA = BitDecomp(a, L);
+    int * Powersof2B = Powersof2(b, L);
+
+    int internalProductAxB = InternalProduct(a,b, L);
+    int internalProductBitDecompAxPowersof2B = InternalProduct(BitDecompA, Powersof2B, L * K );
+    return internalProductAxB == internalProductBitDecompAxPowersof2B;
+}
+
+int TestBitDecomp(){
+    srand(4);
+    int L = log2(q) + 1;
+    int N = K * L;
+    int m = 8;
+
+    int * a = GenerateVector(K);
+    int * BitDecompA = BitDecomp(a, L);
+    int * BitDecompInverseA = BitDecompInverse(BitDecompA, L*K);
+
+    return assertEqualsVector(a, BitDecompInverseA, K);
+}
+
+int TestInternalProduct(){
+    srand(4);
+    int L = log2(q) + 1;
+    int N = K * L;
+    int m = 8;
+
+    int * a = GenerateVector(N);
+    int * b = GenerateVector(K);
+    int * Powersof2B = Powersof2(b, L); // N-dimension
+    int * BitDecompInverseA = BitDecompInverse(a, N); // // L-dimension
+    int * FlattenA = Flatten(a, N); // N-dimension
+
+    int internalProductAxPowerof2B = mod(InternalProduct(a,Powersof2B, N ), q);
+    int internalProductBitDecompInverseAxB = mod(InternalProduct(BitDecompInverseA, b, K ),q);
+    int internalProductFlattenAxPowersof2B = mod(InternalProduct(FlattenA, Powersof2B,  N ), q);
+
+    return internalProductAxPowerof2B == internalProductBitDecompInverseAxB && 
+        internalProductBitDecompInverseAxB == internalProductFlattenAxPowersof2B;
 }
 
 // int TestApplyRows(){
@@ -56,14 +113,17 @@ int TestKeyGen(){
 
 void AssertTest(int result, char * test_name){
     if(result){
-        printf("passed %s test", test_name);
+        printf("passed %s \n", test_name);
     } else{
-        printf("failed %s test", test_name);
+        printf("failed %s \n", test_name);
     }
 }
 
 int main(){
+    AssertTest(TestBitDecomp(), "TestBitDecomp");
     AssertTest(TestKeyGen(), "TestKeyGen");
+    AssertTest(TestInternalProductPowerof2AndBitDecomp(), "TestInternalProductPowerof2AndBitDecomp");
+    AssertTest(TestInternalProduct(), "TestInternalProduct");
     // AssertTest(TestApplyRows(), "TestApplyRows");
 } 
 
