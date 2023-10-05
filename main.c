@@ -6,21 +6,22 @@
 
 int main()
 {
-    srand(time(NULL));
-    int L = log2(q) + 1;
-    int N = K * L;
+    srand(0);
+    int k = log2(q) + 1;
+    int l = log2(q) + 1;
+    int N = (n+1) * l;
     int m = N;
 
-    int * t = GenerateVector(K);
+    int * t = GenerateVector(n);
     int * secretKey = SecretKeyGen(t);
-    int * v = Powersof2(secretKey, L);
+    int * v = Powersof2(secretKey, l);
     int ** A = PublicKeyGen(t, m); // pubK [m, K+1]
 
     int ** C = Encrypt(0, A, m, N); // C[N, N]
     // int ** Cs = MultiplyMatrixEscalar(1, C, N, N);
     // int ** r = applyRows(C, N, N, &BitDecompInverse); // r [N, N]
 
-    int message = Decrypt(C, v, L);
+    int message = Decrypt(C, v, l);
     // int res[L-2];
 
 
@@ -33,5 +34,5 @@ int main()
 
 
 
-    printf("q: %d, K: %d, L: %d, N: %d", q, K, L, N);
+    printf("q: %d, n: %d, l: %d, N: %d", q, n, l, N);
 }
