@@ -129,11 +129,31 @@ int InternalProduct(int * v1, int * v2, int n){
     return value;
 }
 
-float * DivideVectorxVector(int * v1, int * v2, float n){
-    float * result = (float *)malloc(sizeof(float  ) * n);
+int * DivideVectorxVector(int * v1, int * v2, int n){
+    int * result = (int *)malloc(sizeof(int) * n);
 
     for(int i = 0; i < n; i++){
-        result[i] = (float)v1[i] / (float)v2[i];
+        result[i] = round((float)v1[i] / (float)v2[i]);
+    }
+
+    return result;
+}
+
+int * MultiplyVectorxVector(int * v1, int * v2, int n){
+    int * result = (int *)malloc(sizeof(int) * n);
+
+    for(int i = 0; i < n; i++){
+        result[i] = v1[i] * (float)v2[i];
+    }
+
+    return result;
+}
+
+int * MultiplyVectorEscalar(int e, int * v, int size){
+    int * result = (int *)malloc(sizeof(int ) * size);
+
+    for (int i = 0; i< size; i++){
+        result[i] = mod(v[i] * e, q);
     }
 
     return result;
@@ -311,8 +331,6 @@ int ** Encrypt(int message, int ** pubKey, int m, int N){
 
     // m*In + BitDecomp(R * A)
     int ** sum = SumMatrixxMatrix(mIdentity, r, N,N);
-    printVector(RA[10], N, "sum[10]");
-    printVector(RA[0], N, "sum[2]");
 
     // Flatten (m*In + BitDecomp(R * A))
     int ** C = applyRows(sum, N,N, &Flatten);
