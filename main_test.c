@@ -23,7 +23,7 @@ int TestKeyGen(){
     
     int ** publicKey = PublicKeyGen(t, m); // pubK [m, K+1]
 
-    int * check = MultiplyVectorxMatrix(secretKey, publicKey, m, K+1); // check must be equal to error as A.s = e
+    int * check = MultiplyVectorxMatrixOverQ(secretKey, publicKey, m, K+1); // check must be equal to error as A.s = e
     int check_assert[9] = {1,126,2,2,2,2,1,2,0};
 
     for(int h = 0; h < K+1; h++){
