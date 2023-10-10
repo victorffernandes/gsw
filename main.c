@@ -6,23 +6,24 @@
 
 int main()
 {
+    // setup (a partir de q, n e distribuição de erro Chi)
     srand(time(NULL));
     int k = log2(q) + 1;
     int l = log2(q) + 1;
     int N = (n+1) * l;
-    int m = N;
+    int m = N;  // m = O(n * log q)
 
     int * t = GenerateVector(n);
     int * secretKey = SecretKeyGen(t);
     int * v = Powersof2(secretKey, n+1, l);
-    int ** A = PublicKeyGen(t, n, m); // pubK [m, K+1]
+    int ** A = PublicKeyGen(t, m); // pubK [m, K+1]
 
-    int ** C = Encrypt(40, A, m, n+1, N); // C[N, N]
+    int ** C = Encrypt(1, A, m, N); // C[N, N]
     int * Cv = MultiplyVectorxMatrix(v, C, N, N);
 
     int * msg = MultiplyVectorxMatrixOverQ(v, C, N, N);
     // int ** Cs = MultiplyMatrixEscalar(1, C, N, N);
-    int ** CBitDecompInverse = applyRows(C, N, N, &BitDecompInverse); // r [N, N]
+    // int ** CBitDecompInverse = applyRows(C, N, N, &BitDecompInverse); // r [N, N]
 
     int message = Decrypt(C, v, l);
     // int res[L-2];

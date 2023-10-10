@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define q 128
-#define n 4
+#define q 16 // q possui kappa bits (depende de lambda e L)
+#define n 8 // dimensão do reticulado (depende de lambda e L)
 
 int mod(int m, int l){
     if (m<0){
@@ -84,26 +84,40 @@ int * Flatten (int * bitVector, int LK){
 }
 
 int rand_ringz(){
-    return (rand() % ((q) + 1)); // (rand() % (upper - lower + 1)) + (lower);
+    return (rand() % ((q))); // (rand() % (upper - lower + 1)) + (lower); // estava +1 
 } 
 
-int * Powersof2(int * vector, int k, int l){
-    int * result = (int *)malloc(sizeof(int) * k * l);
+int * Powersof2_(int * b, int size, int L){
+    int * result = (int *)malloc(sizeof(int) * L * size);
 
-    for(int j = 0; j < k; j++){
-        for (int i = 0; i < l; i++){
-            int p = (int) (pow(2, i));
-            result[l*j + i] = vector[j] * p;
+    for(int j = 0; j < size; j++){
+        for (int i = 0; i < L; i++){            
+            int p = 1 << i; //  int p = (int) (pow(2, i));
+            result[L*j + i] = b[j] * p;
         }
     }
     return result;
 }
+
+int * Powersof2(int * b, int k, int l){
+    int * result = (int *)malloc(sizeof(int) * k * l);
+
+    for (int i = 0; i < k; i++){            
+        for(int j = 0; j < l; j++){
+            int p = 1 << j; //  int p = (int) (pow(2, i));
+            result[l*i + j] = b[i] * p;
+        }
+    }
+    return result;
+}
+
 
 int * GenerateVector(int size){
     int * vector = (int *)malloc(sizeof(int) * size);
 
     for (int i = 0; i< size; i++){
         vector[i] = rand_ringz();
+        printf("rand_ringz: %d \n", vector[i]);
     }
 
     return vector;
@@ -113,7 +127,7 @@ int * GenerateErrorVector(int size){
     int * vector = (int *)malloc(sizeof(int) * size);
 
     for (int i = 0; i< size; i++){
-        vector[i] = (rand() % (5)) - 2;
+        vector[i] = rand_ringz();
     }
 
     return vector;
@@ -139,27 +153,6 @@ float * DivideVectorxVector(int * v1, int * v2, float size){
     return result;
 }
 
-int * MultiplyVectorxVector(int * v1, int * v2, int size){
-    int * result = (int *)malloc(sizeof(int) *size);
-
-    for(int i = 0; i < size; i++){
-        result[i] = v1[i] * (float)v2[i];
-    }
-
-    return result;
-}
-
-int * MultiplyVectorEscalar(int e, int * v, int size){
-    int * result = (int *)malloc(sizeof(int ) * size);
-
-    for (int i = 0; i< size; i++){
-        result[i] = mod(v[i] * e, q);
-
-    }
-
-    return result;
-}
-
 int ** MultiplyMatrixEscalar(int e, int ** matrix, int r, int c){
     int ** result = (int **)malloc(sizeof(int * ) * r);
 
@@ -180,7 +173,7 @@ int * MultiplyVectorxMatrix(int * v, int ** matrix, int r, int c){
         for (int j = 0; j< c; j++){
             result[i] += v[j] * matrix[i][j];
         }
-        result[i] = result[i];
+        result[i] = result[i] % q;
     }
     return result;
 }
@@ -284,34 +277,34 @@ int ** GenerateBinaryMatrix(int rows, int columns){
 }
 
 
-int ** PublicKeyGen(int * t, int n_, int m){
+int ** PublicKeyGen(int * t, int m){
     int * error = GenerateErrorVector(m);
-    int ** B = GenerateMatrix(m,n_);
-    int * b = SumVector(MultiplyVectorxMatrixOverQ(t, B, m, n_), error, m);
+    int ** B = GenerateMatrix(m,n);
+    int * b = SumVector(MultiplyVectorxMatrixOverQ(t, B, m, n), error, m);
 
     int ** A = (int **)malloc(sizeof(int *) * (m));
     // set first column of A with b
     for(int k = 0; k < m; k++){
-        A[k] = (int *)malloc(sizeof(int *) * (n_ + 1));
+        A[k] = (int *)malloc(sizeof(int *) * (n + 1));
         A[k][0] = b[k];
     }
 
     // set A with B (except first column)
     for(int i = 0; i < m; i++){
-        for(int j = 1; j < n_+1; j++){
+        for(int j = 1; j < n+1; j++){
             A[i][j] = B[i][j-1];
         }
     }
 
     // TODO: must free B, b and error
-    return A; //[_n+1, ]
+    return A;
 }
 
 
 int * SecretKeyGen(int * t){
     int * sk = (int *)malloc(sizeof(int) * (n + 1));
     for (int i = 1; i < n+1; i++){
-        sk[i] = mod(1, -t[i-1]);
+        sk[i] = q - t[i-1]; // antes era - t[i-1]
     }
 
     sk[0] = 1;
@@ -320,11 +313,20 @@ int * SecretKeyGen(int * t){
 }
 
 
-int ** Encrypt(int message, int ** pubKey, int m, int n_, int N){
+int ** Encrypt(int message, int ** pubKey, int m, int N){
     // BitDecomp (R * A)
     int ** R = GenerateBinaryMatrix(N,m);
-    int ** RA = (MultiplyMatrixxMatrix(R, pubKey, N, m, m, n_));
-    int ** r = applyRows(RA, N, n_, &BitDecomp); // r [N, N]
+    int ** RA = (MultiplyMatrixxMatrix(R, pubKey, N, m, m, n+1));
+    int ** r = applyRows(RA, N, n+1, &BitDecomp); // r [N, N]
+
+    for (int i = 0; i < N; i++){
+        for (int j = 0; j < N; j++){
+            printf("%d ", RA[i][j]);
+        }
+        printf("\n");
+    }
+
+    printf("end \n");
 
     // m * In
     int ** Identity = GenerateIdentity(N, N);
@@ -332,17 +334,18 @@ int ** Encrypt(int message, int ** pubKey, int m, int n_, int N){
 
     // m*In + BitDecomp(R * A)
     int ** sum = SumMatrixxMatrix(mIdentity, r, N,N);
-
+    
     for (int i = 0; i < N; i++){
         for (int j = 0; j < N; j++){
             printf("%d ", sum[i][j]);
         }
+        printf("\n");
     }
+
+    printf("end \n");
 
     // Flatten (m*In + BitDecomp(R * A))
     int ** C = applyRows(sum, N,N, &Flatten);
-
-
 
     //TODO: free
 
