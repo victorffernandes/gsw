@@ -14,19 +14,20 @@ int assertEqualsVector(int * v1, int * v2, int size){
 int TestKeyGen(){
     srand(4);
     int L = log2(q) + 1;
-    int N = K * L;
+    int N = (n+1) * L;
     int m = 8;
 
-    int * t = GenerateVector(K);
+    int * t = GenerateVector(n);
     int * secretKey = SecretKeyGen(t);
-    int * v = Powersof2(secretKey, L);
+    int * v = Powersof2(secretKey, n+1, L);
     
     int ** publicKey = PublicKeyGen(t, m); // pubK [m, K+1]
 
-    int * check = MultiplyVectorxMatrixOverQ(secretKey, publicKey, m, K+1); // check must be equal to error as A.s = e
-    int check_assert[9] = {1,126,2,2,2,2,1,2,0};
+    int * check = MultiplyVectorxMatrixOverQ(secretKey, publicKey, m, n+1); // check must be equal to error as A.s = e
+    int check_assert[9] = {0,1,1,0,1,0,0,0};
 
-    for(int h = 0; h < K+1; h++){
+    for(int h = 0; h < n+1; h++){
+        printf("chek: %d ", check[h]);
         if (mod(check[h], q) != check_assert[h]) return 0;
     }
 
@@ -36,46 +37,46 @@ int TestKeyGen(){
 int TestInternalProductPowerof2AndBitDecomp(){
     srand(4);
     int L = log2(q) + 1;
-    int N = K * L;
+    int N = n * L;
     int m = 8;
 
     int * a = GenerateVector(L);
     int * b = GenerateVector(L);
     int * BitDecompA = BitDecomp(a, L);
-    int * Powersof2B = Powersof2(b, L);
+    int * Powersof2B = Powersof2(b, n+1, L);
 
     int internalProductAxB = InternalProduct(a,b, L);
-    int internalProductBitDecompAxPowersof2B = InternalProduct(BitDecompA, Powersof2B, L * K );
+    int internalProductBitDecompAxPowersof2B = InternalProduct(BitDecompA, Powersof2B, L * n );
     return internalProductAxB == internalProductBitDecompAxPowersof2B;
 }
 
 int TestBitDecomp(){
     srand(4);
     int L = log2(q) + 1;
-    int N = K * L;
+    int N = n * L;
     int m = 8;
 
-    int * a = GenerateVector(K);
+    int * a = GenerateVector(n);
     int * BitDecompA = BitDecomp(a, L);
-    int * BitDecompInverseA = BitDecompInverse(BitDecompA, L*K);
+    int * BitDecompInverseA = BitDecompInverse(BitDecompA, L*n);
 
-    return assertEqualsVector(a, BitDecompInverseA, K);
+    return assertEqualsVector(a, BitDecompInverseA, n);
 }
 
 int TestInternalProduct(){
     srand(4);
     int L = log2(q) + 1;
-    int N = K * L;
+    int N = n * L;
     int m = 8;
 
     int * a = GenerateVector(N);
-    int * b = GenerateVector(K);
-    int * Powersof2B = Powersof2(b, L); // N-dimension
+    int * b = GenerateVector(n);
+    int * Powersof2B = Powersof2(b, n+1, L); // N-dimension
     int * BitDecompInverseA = BitDecompInverse(a, N); // // L-dimension
     int * FlattenA = Flatten(a, N); // N-dimension
 
     int internalProductAxPowerof2B = mod(InternalProduct(a,Powersof2B, N ), q);
-    int internalProductBitDecompInverseAxB = mod(InternalProduct(BitDecompInverseA, b, K ),q);
+    int internalProductBitDecompInverseAxB = mod(InternalProduct(BitDecompInverseA, b, n ),q);
     int internalProductFlattenAxPowersof2B = mod(InternalProduct(FlattenA, Powersof2B,  N ), q);
 
     return internalProductAxPowerof2B == internalProductBitDecompInverseAxB && 
