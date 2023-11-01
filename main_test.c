@@ -117,7 +117,7 @@ int TestKeyGen(){
 int TestEncrypt(){
 
     srand(time(NULL));
-    lwe_instance lwe = GenerateLweInstance(16);
+    lwe_instance lwe = GenerateLweInstance(14);
 
     int * t = GenerateVector(lwe.n, lwe);
     int * secretKey = SecretKeyGen(t, lwe);
@@ -125,27 +125,28 @@ int TestEncrypt(){
     
     int ** publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
   
-    int ** C = Encrypt(129, publicKey, lwe);
+    int ** C = Encrypt(513, publicKey, lwe);
 
     // printMatrix(C, lwe.N, lwe.N, "C");
 
     int * checkSUM = MultiplyVectorxMatrixOverQ(v, C, lwe.N, lwe.N, lwe.q); // [N]
     printVector(checkSUM, lwe.N, "checkSUM");
 
-    int median = 0;
+    int value = 0;
     for (int i = 0; i < lwe.l -2 ; i++){
         int p = 1 << i;
         int j = (lwe.l - 2) - i;
         // printf("\n");
         printf("index [%d] value [%d] message [%d] lsb ", i, checkSUM[i], checkSUM[i]/p);
-        median += checkSUM[i]/p;
+
         for(int k = lwe.l; k >= 0; k--){
            printf("%d ",  ((checkSUM[i]/p) >> k) & 1);
         }
-        printf(" bit: %d \n", ((checkSUM[i]/p) >> (lwe.l-2 - i)) & 1);
+        printf(" [%d] bit: %d \n",lwe.l- 1 - i,  ((checkSUM[i]/p) >> (lwe.l- 1 - i)) & 1);
+        value += (1 << (lwe.l- 2 - i)) * (((checkSUM[i]/p) >> (lwe.l- 2 - i)) & 1);
     }
 
-    printf("\n media [%d]", median/(lwe.l -2 ));
+    printf("\n value [%d]", value);
 
     
     // Flatten (m*In + BitDecomp(R * A))
