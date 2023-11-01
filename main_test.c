@@ -125,24 +125,28 @@ int TestEncrypt(){
     
     int ** publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
   
-    int ** C = Encrypt(4096, publicKey, lwe);
+    int ** C = Encrypt(129, publicKey, lwe);
 
     // printMatrix(C, lwe.N, lwe.N, "C");
 
     int * checkSUM = MultiplyVectorxMatrixOverQ(v, C, lwe.N, lwe.N, lwe.q); // [N]
     printVector(checkSUM, lwe.N, "checkSUM");
 
-    for (int i =0; i < lwe.l - 2; i++){
+    int median = 0;
+    for (int i = 0; i < lwe.l -2 ; i++){
         int p = 1 << i;
-        printf("index [%d] value [%d] message [%d] \n", i, checkSUM[i], checkSUM[i]/p);
-    }
-    for (int i =lwe.l -2; i < 2 * lwe.l - 2; i++){
-        int p = 1 << mod(i,lwe.q);
-        printf("index [%d] value [%d] message [%d] \n", i, checkSUM[i], checkSUM[i]/p);
+        int j = (lwe.l - 2) - i;
+        // printf("\n");
+        printf("index [%d] value [%d] message [%d] lsb ", i, checkSUM[i], checkSUM[i]/p);
+        median += checkSUM[i]/p;
+        for(int k = lwe.l; k >= 0; k--){
+           printf("%d ",  ((checkSUM[i]/p) >> k) & 1);
+        }
+        printf(" bit: %d \n", ((checkSUM[i]/p) >> (lwe.l-2 - i)) & 1);
     }
 
-    // float message =  mod((InternalProduct(sum[lwe.l], v, lwe.N)) / v[lwe.l], lwe.q);
-    // printf("message: %f \n", message);
+    printf("\n media [%d]", median/(lwe.l -2 ));
+
     
     // Flatten (m*In + BitDecomp(R * A))
 

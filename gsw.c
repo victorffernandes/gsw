@@ -27,13 +27,10 @@ lwe_instance GenerateLweInstance(int lambda){
 }
 
 
-// int Decrypt(int ** C, int * v, int L){
-//     int ith = log2(q);
-//     float message =  mod((InternalProduct(C[ith], v, L)) / v[ith], q);
-//     printf("message: %f \n", message);
-//     printf("internal [%d]: %d  v[%d]: %d \n",ith,  mod(InternalProduct(C[ith], v, L), q ), ith, v[ith]);
-//     return message;
-// }
+int Decrypt(int ** C, int * v, lwe_instance lwe){
+    float message =  mod((InternalProduct(C[lwe.l-1], v, lwe.N)), lwe.q)/ v[lwe.l-1];
+    return (int) message;
+}
 
 
 int ** GenerateG(lwe_instance lwe){
@@ -86,7 +83,7 @@ int * BitDecompInverse (int * bitVector, int size, lwe_instance lwe){
         for (int i = 0; i < lwe.l; i++){
             sum += (1 << i) * bitVector[(lwe.l)*j + i];
         }
-        result[j] = sum;
+        result[j] = mod(sum, lwe.q);
     }
 
     return result;
