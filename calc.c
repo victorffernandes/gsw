@@ -11,6 +11,18 @@ int mod(int m, int l){
     return m%l;
 }
 
+int rand_ringz(int q){
+    return (rand() % ((q))); // (rand() % (upper - lower + 1)) + (lower); // estava +1 
+} 
+
+int rand_error(){
+    int v = rand() % ((4));
+    if (v != 0) return 0;
+
+    return 1;
+    // return (rand() % ((4))); // (rand() % (upper - lower + 1)) + (lower); // estava +1 
+} 
+
 void printMatrix(int ** m, int r, int c, char * label){
     printf("\n %s \n", label);
     for(int i = 0; i< r; i++){

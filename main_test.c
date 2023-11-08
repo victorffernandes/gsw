@@ -116,44 +116,40 @@ int TestKeyGen(){
 
 int TestEncrypt(){
 
-    srand(time(NULL));
-    lwe_instance lwe = GenerateLweInstance(14);
+    srand(4);
+    lwe_instance lwe = GenerateLweInstance(25);
 
     int * t = GenerateVector(lwe.n, lwe);
     int * secretKey = SecretKeyGen(t, lwe);
     int * v = Powersof2(secretKey, lwe);
     
     int ** publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
+    printVector(secretKey, lwe.n + 1, "secretkey");
+    printMatrix(publicKey, lwe.m, lwe.n+1, "pubKey");
   
-    int ** C = Encrypt(513, publicKey, lwe);
+    int ** C1 = Encrypt(30, publicKey, lwe);
+    int ** C2 = Encrypt(15, publicKey, lwe);
+    int ** C3 = Encrypt(1, publicKey, lwe);
+    int ** C4 = Encrypt(1, publicKey, lwe);
 
-    // printMatrix(C, lwe.N, lwe.N, "C");
+    int ** hSum = HomomorphicSum(C1, C2, lwe);
+    int ** hMult = HomomorphicMult(C1, C2, lwe);
+    int ** hMultConst = HomomorphicMultByConst(C1, 2, lwe);
+    int ** hNAND = HomomorphicNAND(C3, C4, lwe); 
 
-    int * checkSUM = MultiplyVectorxMatrixOverQ(v, C, lwe.N, lwe.N, lwe.q); // [N]
-    printVector(checkSUM, lwe.N, "checkSUM");
+    int sumValue = MPDecrypt(hSum, v, lwe);
+    int multValue = MPDecrypt(hMult, v, lwe);
+    int multConstValue = MPDecrypt(hMultConst, v, lwe);
+    int NANDValue = Decrypt(hNAND, v, lwe);
 
-    int value = 0;
-    for (int i = 0; i < lwe.l -2 ; i++){
-        int p = 1 << i;
-        int j = (lwe.l - 2) - i;
-        // printf("\n");
-        printf("index [%d] value [%d] message [%d] lsb ", i, checkSUM[i], checkSUM[i]/p);
-
-        for(int k = lwe.l; k >= 0; k--){
-           printf("%d ",  ((checkSUM[i]/p) >> k) & 1);
-        }
-        printf(" [%d] bit: %d \n",lwe.l- 1 - i,  ((checkSUM[i]/p) >> (lwe.l- 1 - i)) & 1);
-        value += (1 << (lwe.l- 2 - i)) * (((checkSUM[i]/p) >> (lwe.l- 2 - i)) & 1);
-    }
-
-    printf("\n value [%d]", value);
+    printf("\n sumValue[%d] multValue[%d] multConstValue[%d] NANDValue[%d] ", sumValue, multValue, multConstValue, NANDValue);
 
     
     // Flatten (m*In + BitDecomp(R * A))
 
     //TODO: free
 
-    return C;
+    return 3;
 }
 
 void AssertTest(int result, char * test_name){
