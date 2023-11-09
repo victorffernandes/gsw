@@ -40,7 +40,7 @@ int MPDecrypt(int ** C, int * v, lwe_instance lwe){
         int p = 1 << i;
         int j = (lwe.l - 2) - i;
 
-        printf("index [%d] value [%d] message [%d] lsb \n", i, checkSUM[i], checkSUM[i]/p);
+        // printf("index [%d] value [%d] message [%d] lsb \n", i, checkSUM[i], checkSUM[i]/p);
 
         // for(int k = lwe.l; k >= 0; k--){
         //    printf("%d ",  ((checkSUM[i]/p) >> k) & 1);
@@ -115,7 +115,7 @@ int * Flatten (int * bitVector, int size, lwe_instance lwe){
 }
 
 int * Powersof2(int * b, lwe_instance lwe){
-    int * result = (int *)malloc(sizeof(int) * (lwe.l) * (lwe.n + 1));
+    int * result = (int *)malloc(sizeof(int) * lwe.N);
 
     for(int j = 0; j < (lwe.n + 1); j++){
         for (int i = 0; i < lwe.l; i++){            
@@ -154,7 +154,6 @@ int * GenerateVector(int size, lwe_instance lwe){
 
 int ** PublicKeyGen(int * t, lwe_instance lwe){
     int * error = GenerateErrorVector(lwe.m);
-    printVector(error, lwe.m, "error");
     int ** B = GenerateMatrixOverQ(lwe.m,lwe.n, lwe.q);
     // printMatrix(B, m,n , "B ");
     int * b = SumVectorOverQ(MultiplyVectorxMatrixOverQ(t, B, lwe.m, lwe.n, lwe.q), error, lwe.m, lwe.q);
@@ -238,8 +237,8 @@ int ** HomomorphicNAND(int ** C1, int ** C2, lwe_instance lwe){
 
     // C3 = C1 * C2
     int ** C3 = MultiplyMatrixxMatrixOverQ(C1, C2, lwe.N, lwe.N, lwe.N, lwe.N, lwe.q);
-    // C4 = In - C3
+    // C4 = C3 - In
     int ** C4 = SumMatrixxMatrix(C3, mIdentity, lwe.N, lwe.N);
-    // Flatten (In - C1 * C2)
+    // Flatten (C1 * C2 - In)
     return applyRows(C4, lwe.N, lwe.N, &Flatten, lwe);
 }
