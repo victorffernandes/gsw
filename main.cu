@@ -74,27 +74,28 @@ __global__ void MatSub(int * lm1, int * cm2, int * rm3, int total, int width) {
     }
 }
 
-// __global__ void GPUBitDecompInverse(int * bv, int * rv, int total, int l) { // total must not be the number of bits, but the number of elements in rv
-//     int id = threadIdx.x + blockIdx.x * blockDim.x;
+__global__ void GPUBitDecompInverse(int * bv, int * rv, int total, int l) { // total must not be the number of bits, but the number of elements in rv
+    int id = threadIdx.x + blockIdx.x * blockDim.x;
 
-//     if(id < total){
-//         for(int i = 0; i < l; i++){
-//             rv[id] += (1 << i) * bv[id*l + i];
-//         }
-//     }
-// }
+    if(id < total){
+        rv[id] = 0;
+        for(int i = 0; i < l; i++){
+            rv[id] += (1 << (i)) * bv[id*l + i];
+        }
+    }
+}
 
-// __global__ void GPUBitDecomp(int * v, int * rv, int total, int l) {
-//     int id = threadIdx.x + blockIdx.x * blockDim.x;
+__global__ void GPUBitDecomp(int * v, int * rv, int total, int l) {
+    int id = threadIdx.x + blockIdx.x * blockDim.x;
 
-//     if(id < total){
-//         //printf(" [%d %d %d]", v[id], id*l, id*l + 3);
-//         for(int i = 0; i < l; i++){
-//             rv[id*l + i] = (v[id] >> i) & 1;
-//             printf("[%d %d] ", id, (v[id] >> i) & 1);
-//         }
-//     }
-// }
+    if(id < total){
+        //printf(" [%d %d %d]", v[id], id*l, id*l + 3);
+        for(int i = 0; i < l; i++){
+            rv[id*l + i] = (v[id] >> i) & 1;
+            printf("[%d %d] ", id*l + i, rv[id*l + i]);
+        }
+    }
+}
 
 dim3 getDim3ForMatrix(int rows, int columns){
     int numberOfThreads = rows * columns;
@@ -162,20 +163,20 @@ int main()
 
     int ** sample1  = GenerateIdentity(rows, columns);
 
-    // printMatrix(sample1, rows, columns, "sample1");
+
+    // // printMatrix(sample1, rows, columns, "sample1");
     int * deviceM1 = MatrixAllocOnDevice(sample1, rows, columns, st);
 
-    int ** sample2  = GenerateIdentity(rows, columns*4);
+    // int ** sample2  = GenerateIdentity(rows, columns*4);
 
     // printMatrix(sample2, rows, columns, "sample2");
-    int * deviceM2 = MatrixAllocOnDevice(sample2, rows, columns, st);
+    int * deviceM2 = MatrixAllocOnDevice(GenerateMatrixOverQ(rows, columns*4, 4), rows, columns*4, st);
 
-    // printMatrix(sample2, rows, columns, "sample2");
-    int * deviceM3 = MatrixAllocOnDevice(sample2, rows, columns, st);
+    printMatrix(sample1, rows, columns, "deviceM1'");
 
     // int ** mult = MultiplyMatrixxMatrixOverQ(sample1, sample2, rows, columns, rows, columns, 100000);
 
-    printMatrix(sample1, rows, columns, "device M1");
+    
 
     // -----------------------------------------
 
@@ -192,21 +193,45 @@ int main()
     dim3 grid(requiredNumberOfThreadsPerBlock, 1, 1);
     dim3 block(pw, 1, 1);
 
-    printf("[%d][%d] ", requiredNumberOfThreadsPerBlock, pw);
+    printf("[%d][%d]", requiredNumberOfThreadsPerBlock, pw);
+
+    int l = 4;
 
     // PrintMatrix<<<grid, block, 0, st>>>(deviceM1, columns);
     // MatSum<<<grid, block, 0, st>>>(deviceM1, deviceM2, deviceM3, numberOfThreads, rows); // total, row_length
     // MatMultiplication<<<grid, block, 0, st>>>(deviceM3, deviceM3, deviceM3, numberOfThreads, rows); // result_matrix_length, row_length
     // PrintMatrix<<<grid, block, 0, st>>>(deviceM1, numberOfThreads);
-    // GPUBitDecomp<<< grid, block, 0, st>>>(deviceM1, deviceM3, rows * columns, 4);
+    GPUBitDecomp<<< grid, block, 0, st>>>(deviceM1, deviceM2, rows * columns, l);
+    int ** m3 = MatrixAllocOnHost(deviceM2, rows, columns*4, st);
+
+
+    numberOfThreads = rows * columns;
+    requiredNumberOfThreadsPerBlock = 1;
+    closestPowerOf2 = (log2(numberOfThreads) + 1);
+    pw = 1 << closestPowerOf2;
+
+    if(numberOfThreads > THREADLIMITPERBLOCK) {
+        pw = THREADLIMITPERBLOCK;
+        requiredNumberOfThreadsPerBlock = (numberOfThreads / pw) + 1;
+    }
+
+    dim3 grid1(requiredNumberOfThreadsPerBlock, 1, 1);
+    dim3 block1(pw, 1, 1);
+
+
+    printf("R: %d  %d %d", requiredNumberOfThreadsPerBlock, pw, rows * columns);
+    GPUBitDecompInverse<<< grid1, block1, 0, st>>>(deviceM2, deviceM1, rows * columns, l);
     // PrintMatrix<<<grid, block, 0, st>>>(deviceM3, numberOfThreads*4);
 
-    int ** m2 = MatrixAllocOnHost(deviceM3, rows, columns, st);
+    int ** m2 = MatrixAllocOnHost(deviceM1, rows, columns, st);
+    printMatrix(m2, rows, columns, "BotDecompInverse");
 
-    CHECK_LAST_CUDA_ERROR();
+    // CHECK_LAST_CUDA_ERROR();
 
     cudaStreamSynchronize(st);
-    // printMatrix(m2, rows, columns*4, "m2");
+
+    printMatrix(m3, rows, columns*4, "BitDecomp");
+    printMatrix(m2, rows, columns, "BitDecompInverse");
 
     return 0;
 }
