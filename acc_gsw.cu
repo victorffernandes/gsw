@@ -130,7 +130,7 @@ __global__ void GPUBitDecomp(int * v, int * rv, int total, int l) {
     }
 }
 
-void Flatten(int * device_lin_mat, int * device_lin_mat_temp, int size, lwe_instance lwe, cudaStream_t st){
+void GPUFlatten(int * device_lin_mat, int * device_lin_mat_temp, lwe_instance lwe, cudaStream_t st){
     dim3 grid = getGridForMatrix(lwe.N, lwe.n + 1);
     dim3 block = getBlockForMatrix(lwe.N, lwe.n + 1);
 
@@ -196,44 +196,25 @@ int main()
     int rows = 5;
     int columns = 5;
 
-    int ** sample1  = GenerateIdentity(rows, columns);
+    int ** sample1  = GenerateIdentity(lwe.N, lwe.N);
+    int ** sample2  = GenerateIdentity(lwe.N, lwe.N);
 
     // printMatrix(sample1, rows, columns, "sample1");
-    int * deviceM1 = MatrixAllocOnDevice(sample1, rows, columns, st);
+    int * deviceM1 = MatrixAllocOnDevice(sample1, lwe.N, lwe.N, st);
+    int * deviceM2 = MatrixAllocOnDevice(sample2, lwe.N, lwe.n + 1, st);
 
-    int ** sample2  = GenerateIdentity(rows, columns*4);
 
-    // printMatrix(sample2, rows, columns, "sample2");
-    int * deviceM2 = MatrixAllocOnDevice(sample2, rows, columns, st);
-
-    // printMatrix(sample2, rows, columns, "sample2");
-    int * deviceM3 = MatrixAllocOnDevice(sample2, rows, columns*4, st);
-
-    // int ** mult = MultiplyMatrixxMatrixOverQ(sample1, sample2, rows, columns, rows, columns, 100000);
-
-    printMatrix(sample1, rows, columns, "device M1");
-
-    dim3 grid = getGridForMatrix(rows, columns);
-    dim3 block = getBlockForMatrix(rows, columns);
+    GPUFlatten(deviceM1, deviceM2, lwe, st);
 
     // PrintMatrix<<<grid, block, 0, st>>>(deviceM1, columns);
     // MatSum<<<grid, block, 0, st>>>(deviceM1, deviceM2, deviceM3, numberOfThreads, rows); // total, row_length
     // MatMultiplication<<<grid, block, 0, st>>>(deviceM3, deviceM3, deviceM3, numberOfThreads, rows); // result_matrix_length, row_length
     // PrintMatrix<<<grid, block, 0, st>>>(deviceM1, numberOfThreads);
-    GPUBitDecomp<<< grid, block, 0, st>>>(deviceM1, deviceM3, rows * columns, 4);
     cudaStreamSynchronize(st);
-    int ** m3 = MatrixAllocOnHost(deviceM3, rows, columns*4, st);
+    int ** m3 = MatrixAllocOnHost(deviceM1, lwe.N, lwe.N, st);
     
-    printMatrix(m3, rows, columns*4, "m3");
-    GPUBitDecompInverse<<< grid, block, 0, st>>>(deviceM3, deviceM1, rows * columns * 4, 4);
-    // PrintMatrix<<<grid, block, 0, st>>>(deviceM3, numberOfThreads*4);
-
-    int ** m2 = MatrixAllocOnHost(deviceM1, rows, columns, st);
-
+    printMatrix(m3, lwe.N, lwe.N, "m3");
     CHECK_LAST_CUDA_ERROR();
-
-    cudaStreamSynchronize(st);
-    printMatrix(m2, rows, columns, "m2");
 
     return 0;
 }
