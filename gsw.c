@@ -16,7 +16,7 @@ typedef  struct lwe_instance {
 lwe_instance GenerateLweInstance(int lambda){
     lwe_instance * l = (lwe_instance *) malloc(sizeof(lwe_instance));
     l->lambda = lambda;
-    l->n = 16;
+    l->n = 10;
     l->q = 1 << lambda;
     l->l = log2(l->q);
     l->N = (l->n + 1) * l->l;
@@ -33,14 +33,16 @@ int Decrypt(int ** C, int * v, lwe_instance lwe){
 }
 
 int MPDecrypt(int ** C, int * v, lwe_instance lwe){
-        int * checkSUM = MultiplyVectorxMatrixOverQ(v, C, lwe.N, lwe.N, lwe.q); // [N]
+    int * checkSUM = MultiplyVectorxMatrixOverQ(v, C, lwe.N, lwe.N, lwe.q); // [N]
+
+    printVector(checkSUM, lwe.N, "checkSum");
 
     int value = 0;
-    for (int i = 0; i < lwe.l -2 ; i++){
+    for (int i = 0; i < lwe.l - 2 ; i++){
         int p = 1 << i;
         int j = (lwe.l - 2) - i;
 
-        // printf("index [%d] value [%d] message [%d] lsb \n", i, checkSUM[i], checkSUM[i]/p);
+        printf("index [%d] value [%d] message [%d] lsb \n", i, checkSUM[i], checkSUM[i]/p);
 
         // for(int k = lwe.l; k >= 0; k--){
         //    printf("%d ",  ((checkSUM[i]/p) >> k) & 1);
@@ -48,7 +50,7 @@ int MPDecrypt(int ** C, int * v, lwe_instance lwe){
         // printf(" [%d] bit: %d \n",lwe.l- 1 - i,  ((checkSUM[i]/p) >> (lwe.l- 1 - i)) & 1);
         value += (1 << (lwe.l- 2 - i)) * (((checkSUM[i]/p) >> (lwe.l- 2 - i)) & 1);
     }
-
+     printf("estimated value: %d", value);
     return value;
 }
 
