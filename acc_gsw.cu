@@ -264,7 +264,7 @@ int * GPUEnc(int message, int * device_pubKey, lwe_instance lwe, cudaStream_t st
 int main()
 {
 
-    lwe_instance lwe = GenerateLweInstance(9);
+    lwe_instance lwe = GenerateLweInstance(8);
 
     int * t = GenerateVector(lwe.n, lwe);
     int * secretKey = SecretKeyGen(t, lwe);
@@ -272,7 +272,7 @@ int main()
 
     int ** publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
 
-    int sample_size = 1100;
+    int sample_size = 1000;
     int * sample_values = GenerateVector(sample_size, lwe); 
 
     clock_t start, end;
