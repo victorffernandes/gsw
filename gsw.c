@@ -22,7 +22,7 @@ lwe_instance GenerateLweInstance(int lambda){
     l->N = (l->n + 1) * l->l;
     l->m = l->n * l->l;
 
-    printf("q: %d, n: %d, l: %d, N: %d m: %d", l->q, l->n, l->l, l->N, l->m);
+    // printf("q: %d, n: %d, l: %d, N: %d m: %d", l->q, l->n, l->l, l->N, l->m);
     return *l;
 }
 
@@ -35,12 +35,12 @@ int Decrypt(int ** C, int * v, lwe_instance lwe){
 int MPDecrypt(int ** C, int * v, lwe_instance lwe){
     int * checkSUM = MultiplyVectorxMatrixOverQ(v, C, lwe.N, lwe.N, lwe.q); // [N]
 
-    printVector(checkSUM, lwe.N, "checkSum");
+    // printVector(checkSUM, lwe.N, "checkSum");
 
     int value = 0;
     for (int i = 0; i < lwe.l - 2 ; i++){
         int p = 1 << i;
-        int j = (lwe.l - 2) - i;
+        // int j = (lwe.l - 2) - i;
 
         printf("index [%d] value [%d] message [%d] lsb \n", i, checkSUM[i], checkSUM[i]/p);
 
