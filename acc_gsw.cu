@@ -6,7 +6,7 @@
 #include <iostream>
 #include <time.h>
 
-#define THREADLIMITPERBLOCK 256 
+#define THREADLIMITPERBLOCK 128
 
 #define CHECK_CUDA_ERROR(val) check((val), #val, __FILE__, __LINE__)
 template <typename T>
@@ -95,10 +95,10 @@ __global__ void MatMultiplication(int * lm1, int * cm2, int * rm3, int row, int 
     }
 }
 
-__global__ void MatSum(int * lm1, int * cm2, int * rm3, int total) {
+__global__ void MatSum(int * lm1, int * cm2, int total) {
     int id = threadIdx.x + blockIdx.x * blockDim.x;
     if(id < total){
-        rm3[id] = (lm1[id] + cm2[id]);
+        lm1[id] = (lm1[id] + cm2[id]);
     }
 }
 
@@ -209,10 +209,21 @@ int *  MatrixFreeOnDevice(int ** matrix, int rows, int columns){
     return deviceMatrix;
 }
 
+void getMemInfo(){
+    size_t freeMem, totalMem;
+    cudaError_t cudaStatus = cudaMemGetInfo(&freeMem, &totalMem);
+
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemGetInfo falhou: %s\n", cudaGetErrorString(cudaStatus));
+    }
+
+    printf("Total Memory: %zu bytes\n", totalMem);
+    printf("Free Memory: %zu bytes\n", freeMem);
+}
+
 
 
 int * GPUEnc(int message, int * device_pubKey, lwe_instance lwe, cudaStream_t st){
-
     dim3 gridNm = getGridForMatrix(lwe.N, lwe.m);
     dim3 blockNm = getBlockForMatrix(lwe.N, lwe.m);
 
@@ -223,14 +234,14 @@ int * GPUEnc(int message, int * device_pubKey, lwe_instance lwe, cudaStream_t st
     dim3 blockNN = getBlockForMatrix(lwe.N, lwe.N);
 
 
+    //mem-alloc
     int * device_R = MatrixAllocEmptyOnDevice(lwe.N, lwe.m, st); // [N, m]
+
     GPUGenerateR<<<gridNm, blockNm, (lwe.N * lwe.m) * (sizeof(int)/32) , st>>>(device_R, lwe.N * lwe.m, time(NULL));
 
     int * device_RA = MatrixAllocEmptyOnDevice(lwe.N, lwe.n + 1, st); // [N, n+1]
     int * device_RABitDecomp = MatrixAllocEmptyOnDevice(lwe.N, lwe.N, st); // [N, N]
-
     int * device_mIdentity = MatrixAllocEmptyOnDevice(lwe.N, lwe.N, st); // [m, n+1]
-    int * device_Cipher = MatrixAllocEmptyOnDevice(lwe.N, lwe.N, st); // [N, m]
 
     GPUGenerateMessageIdentity<<<gridNN, blockNN, 0, st>>>(device_mIdentity, lwe.N, lwe.N, message);
 
@@ -238,22 +249,22 @@ int * GPUEnc(int message, int * device_pubKey, lwe_instance lwe, cudaStream_t st
     MatMultiplication<<<gridNn1, blockNn1, 0, st>>>(device_R, device_pubKey, device_RA, lwe.N, (lwe.n + 1), lwe.m, lwe);
     GPUBitDecomp<<< gridNn1, blockNn1, 0, st>>>(device_RA, device_RABitDecomp, lwe.N * (lwe.n + 1), lwe.l); // [N, n + 1] -> [N, N]
 
-    MatSum<<<gridNN, blockNN, 0, st>>>(device_mIdentity, device_RABitDecomp, device_Cipher, lwe.N * lwe.N);
-    GPUFlatten(device_Cipher, device_mIdentity, lwe, st);
+    MatSum<<<gridNN, blockNN, 0, st>>>(device_mIdentity, device_RABitDecomp, lwe.N * lwe.N);
+    GPUFlatten(device_mIdentity, device_RABitDecomp, lwe, st);
 
-    CHECK_CUDA_ERROR(cudaFreeAsync(device_RA, st));
-    CHECK_CUDA_ERROR(cudaFreeAsync(device_RABitDecomp, st));
-    CHECK_CUDA_ERROR(cudaFreeAsync(device_R, st));
-    CHECK_CUDA_ERROR(cudaFreeAsync(device_mIdentity, st));
-    CHECK_CUDA_ERROR(cudaFreeAsync(device_Cipher, st));
+    // CHECK_CUDA_ERROR(cudaFreeAsync(device_RA, st));
+    // CHECK_CUDA_ERROR(cudaFreeAsync(device_RABitDecomp, st));
+    // CHECK_CUDA_ERROR(cudaFreeAsync(device_R, st));
+    // CHECK_CUDA_ERROR(cudaFreeAsync(device_mIdentity, st));
 
-    return device_Cipher;
+    return device_mIdentity;
 }
 
 
 int main()
 {
-    lwe_instance lwe = GenerateLweInstance(40);
+
+    lwe_instance lwe = GenerateLweInstance(9);
 
     int * t = GenerateVector(lwe.n, lwe);
     int * secretKey = SecretKeyGen(t, lwe);
@@ -261,7 +272,7 @@ int main()
 
     int ** publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
 
-    int sample_size = 1000;
+    int sample_size = 1100;
     int * sample_values = GenerateVector(sample_size, lwe); 
 
     clock_t start, end;
@@ -279,7 +290,7 @@ int main()
     cudaStream_t st[sample_size];
 
     for (int i = 0; i < sample_size; i++){
-        CHECK_CUDA_ERROR(cudaStreamCreate(&st[i]));
+        CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&st[i], CU_STREAM_NON_BLOCKING));
     }
 
     int * device_pubKey = MatrixAllocOnDevice(publicKey, lwe.m, lwe.n + 1, st[0]); // [m, n+1]
@@ -290,6 +301,7 @@ int main()
         GPUEnc(10, device_pubKey, lwe, st[i]);
     }
 
+    
     for (int i = 0; i < sample_size; i++){
         CHECK_CUDA_ERROR(cudaStreamSynchronize(st[i]));
         CHECK_CUDA_ERROR(cudaStreamDestroy(st[i]));
@@ -301,6 +313,8 @@ int main()
     printf("\nGPU Encrypt: %f \n", gpu_time_used);
     printf("\nSpeedUp: %f \n", cpu_time_used/gpu_time_used);
     CHECK_LAST_CUDA_ERROR();
+
+    cudaDeviceReset();
 
     return 0;
 }
