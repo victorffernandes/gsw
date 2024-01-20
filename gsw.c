@@ -16,13 +16,13 @@ typedef  struct lwe_instance {
 lwe_instance GenerateLweInstance(int lambda){
     lwe_instance * l = (lwe_instance *) malloc(sizeof(lwe_instance));
     l->lambda = lambda;
-    l->n = 10;
+    l->n = 16;
     l->q = 1 << lambda;
     l->l = lambda;
     l->N = (l->n + 1) * l->l;
     l->m = l->n * l->l;
 
-    // printf("q: %d, n: %d, l: %d, N: %d m: %d", l->q, l->n, l->l, l->N, l->m);
+    printf("q: %d, n: %d, l: %d, N: %d m: %d", l->q, l->n, l->l, l->N, l->m);
     return *l;
 }
 
@@ -34,8 +34,6 @@ int Decrypt(int ** C, int * v, lwe_instance lwe){
 
 int MPDecrypt(int ** C, int * v, lwe_instance lwe){
     int * checkSUM = MultiplyVectorxMatrixOverQ(v, C, lwe.N, lwe.N, lwe.q); // [N]
-
-    // printVector(checkSUM, lwe.N, "checkSum");
 
     int value = 0;
     for (int i = 0; i < lwe.l - 2 ; i++){
@@ -149,9 +147,7 @@ int * GenerateVector(int size, lwe_instance lwe){
 
 int ** PublicKeyGen(int * t, lwe_instance lwe){
     int * error = GenerateErrorVector(lwe.m);
-    printVector(error, lwe.m, "error vector");
     int ** B = GenerateMatrixOverQ(lwe.m,lwe.n, lwe.q);
-    // printMatrix(B, m,n , "B ");
     int * b = SumVectorOverQ(MultiplyVectorxMatrixOverQ(t, B, lwe.m, lwe.n, lwe.q), error, lwe.m, lwe.q);
 
     int ** A = (int **)malloc(sizeof(int *) * (lwe.m));
@@ -194,8 +190,6 @@ int ** Encrypt(int message, int ** pubKey, lwe_instance lwe){
     // // m * In
     int ** Identity = GenerateIdentity(lwe.N, lwe.N);
     int ** mIdentity = MultiplyMatrixEscalarOverQ(message, Identity, lwe.N, lwe.N, lwe.q); // [N, N]
-
-    // printMatrix(mIdentity, lwe.N, lwe.N, "Identity");
 
     // m*In + BitDecomp(R * A)
     int ** sum = SumMatrixxMatrix(mIdentity, BitDecomRA, lwe.N, lwe.N); // [N, N]
