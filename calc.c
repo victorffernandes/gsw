@@ -140,6 +140,19 @@ int ** SumMatrixxMatrix(int ** m1, int ** m2, int r, int c){
     return result;
 }
 
+int ** SubMatrixxMatrix(int ** m1, int ** m2, int r, int c){
+    int ** result = (int **)malloc(sizeof(int * ) * r);
+
+    for (int i = 0; i< r; i++){
+        result[i] = (int *)malloc(sizeof(int) * c);
+        for (int j = 0; j < c; j++){
+            result[i][j] = m1[i][j] + m2[i][j];
+        }
+    }
+
+    return result;
+}
+
 int ** MultiplyMatrixxMatrixOverQ(int ** m1, int ** m2, int r1, int c1, int r2, int c2, int q){
     int ** result = (int **)malloc(sizeof(int * ) * r1);
 

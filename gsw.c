@@ -18,7 +18,7 @@ lwe_instance GenerateLweInstance(int lambda){
     l->lambda = lambda;
     l->n = 10;
     l->q = 1 << lambda;
-    l->l = log2(l->q);
+    l->l = lambda;
     l->N = (l->n + 1) * l->l;
     l->m = l->n * l->l;
 
@@ -40,14 +40,7 @@ int MPDecrypt(int ** C, int * v, lwe_instance lwe){
     int value = 0;
     for (int i = 0; i < lwe.l - 2 ; i++){
         int p = 1 << i;
-        // int j = (lwe.l - 2) - i;
-
-        printf("index [%d] value [%d] message [%d] lsb \n", i, checkSUM[i], checkSUM[i]/p);
-
-        // for(int k = lwe.l; k >= 0; k--){
-        //    printf("%d ",  ((checkSUM[i]/p) >> k) & 1);
-        // }
-        // printf(" [%d] bit: %d \n",lwe.l- 1 - i,  ((checkSUM[i]/p) >> (lwe.l- 1 - i)) & 1);
+        int j = (lwe.l - 2) - i;
         value += (1 << (lwe.l- 2 - i)) * (((checkSUM[i]/p) >> (lwe.l- 2 - i)) & 1);
     }
      printf("estimated value: %d", value);
@@ -156,6 +149,7 @@ int * GenerateVector(int size, lwe_instance lwe){
 
 int ** PublicKeyGen(int * t, lwe_instance lwe){
     int * error = GenerateErrorVector(lwe.m);
+    printVector(error, lwe.m, "error vector");
     int ** B = GenerateMatrixOverQ(lwe.m,lwe.n, lwe.q);
     // printMatrix(B, m,n , "B ");
     int * b = SumVectorOverQ(MultiplyVectorxMatrixOverQ(t, B, lwe.m, lwe.n, lwe.q), error, lwe.m, lwe.q);
@@ -233,14 +227,29 @@ int ** HomomorphicMultByConst(int ** C1, int a, lwe_instance lwe){
     return applyRows(C3, lwe.N, lwe.N, &Flatten, lwe);
 }
 
+int ** HomomorphicAND(int ** C1, int ** C2, lwe_instance lwe){
+    // C3 = C1 * C2
+    int ** C3 = MultiplyMatrixxMatrixOverQ(C1, C2, lwe.N, lwe.N, lwe.N, lwe.N, lwe.q);
+    return C3;
+}
+
 int ** HomomorphicNAND(int ** C1, int ** C2, lwe_instance lwe){
     int ** Identity = GenerateIdentity(lwe.N, lwe.N);
-    int ** mIdentity = MultiplyMatrixEscalarOverQ(-1, Identity, lwe.N, lwe.N, lwe.q);
 
     // C3 = C1 * C2
     int ** C3 = MultiplyMatrixxMatrixOverQ(C1, C2, lwe.N, lwe.N, lwe.N, lwe.N, lwe.q);
     // C4 = C3 - In
-    int ** C4 = SumMatrixxMatrix(C3, mIdentity, lwe.N, lwe.N);
+    int ** C4 = SubMatrixxMatrix(Identity, C3, lwe.N, lwe.N);
     // Flatten (C1 * C2 - In)
     return applyRows(C4, lwe.N, lwe.N, &Flatten, lwe);
+}
+
+int ** HomomorphicXOR(int ** C1, int ** C2, lwe_instance lwe){
+    int ** NANDC1xC2 = HomomorphicNAND(C1, C2, lwe);
+    int ** N1 = HomomorphicNAND(C1, NANDC1xC2, lwe);
+    int ** N2 = HomomorphicNAND(C2, NANDC1xC2, lwe);
+
+    int ** xor = HomomorphicNAND(N1, N2, lwe);
+    // Flatten (C1 * C2 - In)
+    return applyRows(xor, lwe.N, lwe.N, &Flatten, lwe);
 }
