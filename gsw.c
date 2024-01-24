@@ -18,7 +18,7 @@ lwe_instance GenerateLweInstance(int lambda){
     l->lambda = lambda;
     l->n = 16;
     l->q = 1 << lambda;
-    l->l = log2(l->q);
+    l->l = lambda;
     l->N = (l->n + 1) * l->l;
     l->m = l->n * l->l;
 
@@ -33,15 +33,15 @@ int Decrypt(int ** C, int * v, lwe_instance lwe){
 }
 
 int MPDecrypt(int ** C, int * v, lwe_instance lwe){
-        int * checkSUM = MultiplyVectorxMatrixOverQ(v, C, lwe.N, lwe.N, lwe.q); // [N]
+    int * checkSUM = MultiplyVectorxMatrixOverQ(v, C, lwe.N, lwe.N, lwe.q); // [N]
 
     int value = 0;
-    for (int i = 0; i < lwe.l -2 ; i++){
+    for (int i = 0; i < lwe.l - 2 ; i++){
         int p = 1 << i;
         int j = (lwe.l - 2) - i;
         value += (1 << (lwe.l- 2 - i)) * (((checkSUM[i]/p) >> (lwe.l- 2 - i)) & 1);
     }
-
+     printf("estimated value: %d", value);
     return value;
 }
 
@@ -148,7 +148,6 @@ int * GenerateVector(int size, lwe_instance lwe){
 int ** PublicKeyGen(int * t, lwe_instance lwe){
     int * error = GenerateErrorVector(lwe.m);
     int ** B = GenerateMatrixOverQ(lwe.m,lwe.n, lwe.q);
-    // printMatrix(B, m,n , "B ");
     int * b = SumVectorOverQ(MultiplyVectorxMatrixOverQ(t, B, lwe.m, lwe.n, lwe.q), error, lwe.m, lwe.q);
 
     int ** A = (int **)malloc(sizeof(int *) * (lwe.m));
@@ -191,8 +190,6 @@ int ** Encrypt(int message, int ** pubKey, lwe_instance lwe){
     // // m * In
     int ** Identity = GenerateIdentity(lwe.N, lwe.N);
     int ** mIdentity = MultiplyMatrixEscalarOverQ(message, Identity, lwe.N, lwe.N, lwe.q); // [N, N]
-
-    // printMatrix(mIdentity, lwe.N, lwe.N, "Identity");
 
     // m*In + BitDecomp(R * A)
     int ** sum = SumMatrixxMatrix(mIdentity, BitDecomRA, lwe.N, lwe.N); // [N, N]

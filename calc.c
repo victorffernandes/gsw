@@ -225,3 +225,13 @@ int ** GenerateBinaryMatrix(int rows, int columns){
 
     return matrix;
 }
+
+int * GenerateBinaryVector(int size){
+    int * vector = (int *)malloc(sizeof(int) * size);
+
+    for (int i = 0; i< size; i++){
+        vector[i] =  rand() % 2 ;// TODO: get int by parameter q
+    }
+
+    return vector;
+}
