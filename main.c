@@ -1,4 +1,4 @@
-#include "gsw.c"
+#include "lib/gsw.c"
 #include <time.h>
 #include <math.h>
 

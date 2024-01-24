@@ -3,6 +3,8 @@
 #include <math.h>
 #include "calc.c"
 
+typedef int*** cbyte;
+typedef unsigned char byte;
 
 typedef  struct lwe_instance {
     int q; // q possui kappa bits (depende de lambda e l)
@@ -199,6 +201,12 @@ int ** Encrypt(int message, int ** pubKey, lwe_instance lwe){
 
     return C;
 }
+
+// cbyte ByteEncrypt(byte b, int ** pubKey, lwe_instance lwe){
+//     for(int i = 0; i < 8;i++){
+
+//     }
+// }
 
 int ** HomomorphicSum(int ** C1, int ** C2, lwe_instance lwe){
     int ** C3 = SumMatrixxMatrix(C1, C2, lwe.N, lwe.N);
