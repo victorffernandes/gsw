@@ -3,6 +3,8 @@
 #include <math.h>
 #include "calc.c"
 
+const BYTE_LENGTH = 8;
+
 typedef int*** cbyte;
 typedef unsigned char byte;
 
@@ -202,11 +204,25 @@ int ** Encrypt(int message, int ** pubKey, lwe_instance lwe){
     return C;
 }
 
-// cbyte ByteEncrypt(byte b, int ** pubKey, lwe_instance lwe){
-//     for(int i = 0; i < 8;i++){
+cbyte ByteEncrypt(byte b, int ** pubKey, lwe_instance lwe){
+    int *** c = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
+    for(int j = 0; j < BYTE_LENGTH; j++){
+        int p = (b >> j) & 1; //  int p = (int) (pow(2, i));
+        c[j] = Encrypt(p, pubKey, lwe);
+    }
 
-//     }
-// }
+    return c;
+}
+
+byte ByteDecrypt(cbyte b, int ** pubKey, int * v, lwe_instance lwe){
+    byte c = (unsigned char *) malloc(sizeof(unsigned char));
+    for(int j = 0; j < BYTE_LENGTH; j++){
+        int p = Decrypt(b[j], v, lwe);
+        c = (c & ~((unsigned char)1 << j)) | ((unsigned char)p << j);
+    }
+
+    return c;
+}
 
 int ** HomomorphicSum(int ** C1, int ** C2, lwe_instance lwe){
     int ** C3 = SumMatrixxMatrix(C1, C2, lwe.N, lwe.N);
