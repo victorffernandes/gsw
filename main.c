@@ -19,13 +19,14 @@ int main()
 
     int ** C = Encrypt(1, publicKey, lwe); // C[N, N]
     int ** C2 = Encrypt(1, publicKey, lwe); // C[N, N]
-    unsigned char b = 102;
+    unsigned char a = 0;
+    unsigned char b = 1;
     cbyte C3 = ByteEncrypt(b, publicKey, lwe); // C[N, N]
-    byte C4 = ByteDecrypt(C3, publicKey, v, lwe); // C[N, N]
-    int ** AND = HomomorphicXOR(C, C2, lwe);
-    int Cr = Decrypt(C, v, lwe);
-    int C2r = Decrypt(C2, v, lwe);
-    int r = Decrypt(AND, v, lwe);
+    cbyte C3_ = ByteEncrypt(a, publicKey, lwe); // C[N, N]
+    cbyte C3__ = ByteXOR(C3, C3_, v, lwe); // C[N, N]
+    byte C4 = ByteDecrypt(C3__, v, lwe); // C[N, N]
+    byte C5 = ByteDecrypt(C3_, v, lwe); // C[N, N]
+    byte C6 = ByteDecrypt(C3, v, lwe); // C[N, N]
 
-    printf(" \n result: %d %d %d %d \n", Cr, C2r, r, C4);
+    printf(" \n result: %d %d %d\n", C5, C6, C4);
 }

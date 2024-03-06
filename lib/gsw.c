@@ -3,7 +3,7 @@
 #include <math.h>
 #include "calc.c"
 
-const BYTE_LENGTH = 8;
+const int BYTE_LENGTH = 8;
 
 typedef int*** cbyte;
 typedef unsigned char byte;
@@ -14,19 +14,22 @@ typedef  struct lwe_instance {
     int N; // (n+1) * l
     int l; // l bits of q
     int m; // arbitrary parameter  (depende de lambda e l)
+    int B; // B bounded error
     int lambda; // security parameter
 } lwe_instance;
 
 lwe_instance GenerateLweInstance(int lambda){
     lwe_instance * l = (lwe_instance *) malloc(sizeof(lwe_instance));
     l->lambda = lambda;
-    l->n = 16;
+    l->n = 4;
     l->q = 1 << lambda;
     l->l = lambda;
     l->N = (l->n + 1) * l->l;
     l->m = l->n * l->l;
+    l->B = 4;
 
     printf("q: %d, n: %d, l: %d, N: %d m: %d", l->q, l->n, l->l, l->N, l->m);
+    printf("\n q/B: %d, L: 4,  8 (N+1)^L: %d", l->q/l->B, 8 * pow(l->N + 1, 4));
     return *l;
 }
 
@@ -150,7 +153,7 @@ int * GenerateVector(int size, lwe_instance lwe){
 
 
 int ** PublicKeyGen(int * t, lwe_instance lwe){
-    int * error = GenerateErrorVector(lwe.m);
+    int * error = GenerateErrorVector(lwe.m, lwe.B);
     int ** B = GenerateMatrixOverQ(lwe.m,lwe.n, lwe.q);
     int * b = SumVectorOverQ(MultiplyVectorxMatrixOverQ(t, B, lwe.m, lwe.n, lwe.q), error, lwe.m, lwe.q);
 
@@ -204,26 +207,6 @@ int ** Encrypt(int message, int ** pubKey, lwe_instance lwe){
     return C;
 }
 
-cbyte ByteEncrypt(byte b, int ** pubKey, lwe_instance lwe){
-    int *** c = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
-    for(int j = 0; j < BYTE_LENGTH; j++){
-        int p = (b >> j) & 1; //  int p = (int) (pow(2, i));
-        c[j] = Encrypt(p, pubKey, lwe);
-    }
-
-    return c;
-}
-
-byte ByteDecrypt(cbyte b, int ** pubKey, int * v, lwe_instance lwe){
-    byte c = (unsigned char *) malloc(sizeof(unsigned char));
-    for(int j = 0; j < BYTE_LENGTH; j++){
-        int p = Decrypt(b[j], v, lwe);
-        c = (c & ~((unsigned char)1 << j)) | ((unsigned char)p << j);
-    }
-
-    return c;
-}
-
 int ** HomomorphicSum(int ** C1, int ** C2, lwe_instance lwe){
     int ** C3 = SumMatrixxMatrix(C1, C2, lwe.N, lwe.N);
     return applyRows(C3, lwe.N, lwe.N, &Flatten, lwe);
@@ -248,7 +231,16 @@ int ** HomomorphicMultByConst(int ** C1, int a, lwe_instance lwe){
 int ** HomomorphicAND(int ** C1, int ** C2, lwe_instance lwe){
     // C3 = C1 * C2
     int ** C3 = MultiplyMatrixxMatrixOverQ(C1, C2, lwe.N, lwe.N, lwe.N, lwe.N, lwe.q);
-    return C3;
+    return applyRows(C3, lwe.N, lwe.N, &Flatten, lwe);
+}
+
+int ** HomomorphicNOT(int ** C1, lwe_instance lwe){
+    int ** Identity = GenerateIdentity(lwe.N, lwe.N);
+
+    // C4 = In - C1
+    int ** C4 = SubMatrixxMatrix(Identity, C1, lwe.N, lwe.N);
+    // Flatten (C4)
+    return applyRows(C4, lwe.N, lwe.N, &Flatten, lwe);
 }
 
 int ** HomomorphicNAND(int ** C1, int ** C2, lwe_instance lwe){
@@ -262,12 +254,48 @@ int ** HomomorphicNAND(int ** C1, int ** C2, lwe_instance lwe){
     return applyRows(C4, lwe.N, lwe.N, &Flatten, lwe);
 }
 
-int ** HomomorphicXOR(int ** C1, int ** C2, lwe_instance lwe){
-    int ** NANDC1xC2 = HomomorphicNAND(C1, C2, lwe);
-    int ** N1 = HomomorphicNAND(C1, NANDC1xC2, lwe);
-    int ** N2 = HomomorphicNAND(C2, NANDC1xC2, lwe);
+int ** HomomorphicXOR(int ** C1, int ** C2,  lwe_instance lwe){
+    int ** NANDC1xC2 = HomomorphicNAND(C1, C2, lwe); // 0 1 = 1
+    int ** N1 = HomomorphicNAND(C1, NANDC1xC2, lwe); // 0 1 = 1
+    int ** N2 = HomomorphicNAND(C2, NANDC1xC2, lwe); // 1 1 = 0
+    int ** xor = HomomorphicNAND(N1, N2, lwe); // 0 1 = 0
+    //xor = HomomorphicNOT(xor, lwe); // 0 0 = 0
 
-    int ** xor = HomomorphicNAND(N1, N2, lwe);
+    // printf("\n N1: %d \n", Decrypt(N1, v, lwe)); 
+    // printf("\n N2: %d \n", Decrypt(N2, v, lwe));
+    // printf("\n xor: %d \n", Decrypt(xor, v, lwe));
     // Flatten (C1 * C2 - In)
-    return applyRows(xor, lwe.N, lwe.N, &Flatten, lwe);
+    return xor;
+}
+
+cbyte ByteEncrypt(byte b, int ** pubKey, lwe_instance lwe){
+    int *** c = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
+    for(int j = 0; j < BYTE_LENGTH; j++){
+        int p = (b >> j) & 1; //  int p = (int) (pow(2, i));
+        c[j] = Encrypt(p, pubKey, lwe);
+    }
+
+    return c;
+}
+
+byte ByteDecrypt(cbyte b, int * v, lwe_instance lwe){
+    byte * c = (byte *) malloc(sizeof(unsigned char));
+
+    for(int j = 0; j < BYTE_LENGTH; j++){
+        int p = Decrypt(b[j], v, lwe);
+        printf("Decrypt of bit %d of value %d \n", j, p );
+        *c = (*c & ~((unsigned char)1 << j)) | ((unsigned char)p << j);
+    }
+
+    return *c;
+}
+
+cbyte ByteXOR(cbyte a, cbyte b, int * v, lwe_instance lwe){
+    cbyte c = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
+    for(int j = 0; j < BYTE_LENGTH; j++){
+        c[j] = HomomorphicXOR(a[j], b[j], lwe);
+        printf("XOR beetwen %d and %d = %d \n",Decrypt(a[j], v, lwe), Decrypt(b[j], v, lwe), Decrypt(c[j], v, lwe) );
+    }
+
+    return c;
 }

@@ -15,8 +15,8 @@ int rand_ringz(int q){
     return (rand() % ((q))); // (rand() % (upper - lower + 1)) + (lower); // estava +1 
 } 
 
-int rand_error(){
-    int v = rand() % ((4));
+int rand_error(int max_error){
+    int v = rand() % ((max_error));
     if (v != 0) return 0;
 
     return 1;
@@ -50,11 +50,11 @@ void printVectorf(float * v, int size, char * label){
     printf("\n");
 }
 
-int * GenerateErrorVector(int size){
+int * GenerateErrorVector(int size, int max_error){
     int * vector = (int *)malloc(sizeof(int) * size);
 
     for (int i = 0; i< size; i++){
-        vector[i] = rand_error();
+        vector[i] = rand_error(max_error);
     }
 
     return vector;

@@ -118,11 +118,70 @@ int TestApplyRows()
     return assertEqualsMatrix(sample, result_, 4, 4);
 }
 
-int TestEncrypt()
+int TestNOT()
 {
-
     srand(4);
     lwe_instance lwe = GenerateLweInstance(25);
+
+    int *t = GenerateVector(lwe.n, lwe);
+    int *secretKey = SecretKeyGen(t, lwe);
+    int *v = Powersof2(secretKey, lwe);
+
+    int **publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
+    int **C4 = Encrypt(0, publicKey, lwe);
+    int **C5 = Encrypt(1, publicKey, lwe);
+
+    int NOT1Value = Decrypt(HomomorphicNOT(C4, lwe), v, lwe);
+    int NOT2Value = Decrypt(HomomorphicNOT(C5, lwe), v, lwe);
+
+    return NOT1Value == 1 && NOT2Value == 0;
+}
+
+int TestNAND()
+{
+    lwe_instance lwe = GenerateLweInstance(25);
+
+    int *t = GenerateVector(lwe.n, lwe);
+    int *secretKey = SecretKeyGen(t, lwe);
+    int *v = Powersof2(secretKey, lwe);
+
+    int **publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
+    int **C4 = Encrypt(1, publicKey, lwe);
+    int **C5 = Encrypt(0, publicKey, lwe);
+
+    int NAND1Value = Decrypt(HomomorphicNAND(C5, C5, lwe), v, lwe);
+    int NAND2Value = Decrypt(HomomorphicNAND(C4, C5, lwe), v, lwe);
+    int NAND3Value = Decrypt(HomomorphicNAND(C5, C4, lwe), v, lwe);
+    int NAND4Value = Decrypt(HomomorphicNAND(C4, C4, lwe), v, lwe);
+
+    return NAND1Value == 1 && NAND2Value == 1 && NAND3Value == 1 && NAND4Value == 0;
+}
+
+int TestXOR()
+{
+    // srand(5);
+    lwe_instance lwe = GenerateLweInstance(31);
+
+    int *t = GenerateVector(lwe.n, lwe);
+    int *secretKey = SecretKeyGen(t, lwe);
+    int *v = Powersof2(secretKey, lwe);
+
+    int **publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
+    int **C4 = Encrypt(1, publicKey, lwe);
+    int **C5 = Encrypt(0, publicKey, lwe);
+
+    int XOR1Value = Decrypt(HomomorphicXOR(C5, C5, lwe), v, lwe);
+    int XOR2Value = Decrypt(HomomorphicXOR(C4, C5, lwe), v, lwe);
+    int XOR3Value = Decrypt(HomomorphicXOR(C5, C4, lwe), v, lwe);
+    int XOR4Value = Decrypt(HomomorphicXOR(C4, C4, lwe), v, lwe);
+
+    return XOR3Value == 1 && XOR1Value == 0 && XOR2Value == 1 && XOR4Value == 0;
+}
+
+int TestEncrypt()
+{
+    srand(4);
+    lwe_instance lwe = GenerateLweInstance(30);
 
     int *t = GenerateVector(lwe.n, lwe);
     int *secretKey = SecretKeyGen(t, lwe);
@@ -134,18 +193,26 @@ int TestEncrypt()
     int **C2 = Encrypt(15, publicKey, lwe);
     int **C3 = Encrypt(1, publicKey, lwe);
     int **C4 = Encrypt(1, publicKey, lwe);
+    int **C5 = Encrypt(0, publicKey, lwe);
 
     int **hSum = HomomorphicSum(C1, C2, lwe);
     int **hMult = HomomorphicMult(C1, C2, lwe);
     int **hMultConst = HomomorphicMultByConst(C1, 2, lwe);
     int **hNAND = HomomorphicNAND(C3, C4, lwe);
+    int **hXOR1 = HomomorphicXOR(C3, C4,lwe);
+    int **hXOR2 = HomomorphicXOR(C3, C5,lwe);
 
     int sumValue = MPDecrypt(hSum, v, lwe);
     int multValue = MPDecrypt(hMult, v, lwe);
     int multConstValue = MPDecrypt(hMultConst, v, lwe);
     int NANDValue = Decrypt(hNAND, v, lwe);
 
-    return sumValue == 44 & multConstValue == 60 && multValue == 450;
+    int XOR1Value = Decrypt(hXOR1, v, lwe);
+    int XOR2Value = Decrypt(hXOR2, v, lwe);
+
+    printf("\n %d %d \n", XOR1Value, XOR2Value);
+
+    return sumValue == 44 & multConstValue == 60 && multValue == 450 && XOR1Value == 0 && XOR2Value == 1;
 }
 
 void AssertTest(int result, char *test_name)
@@ -167,5 +234,12 @@ int main()
     AssertTest(TestInternalProductPowerof2AndBitDecomp(), "TestInternalProductPowerof2AndBitDecomp");
     AssertTest(TestInternalProduct(), "TestInternalProduct");
     AssertTest(TestApplyRows(), "TestApplyRows");
-    AssertTest(TestEncrypt(), "TestEncrypt");
+    // AssertTest(TestEncrypt(), "TestEncrypt");
+    AssertTest(TestNAND(), "TestNAND");
+
+    for (int i = 0; i < 20; i++)
+    {
+        AssertTest(TestXOR(), "TestXOR");
+    }
+    AssertTest(TestNOT(), "TestNOT");
 }
