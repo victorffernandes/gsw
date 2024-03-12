@@ -26,7 +26,7 @@ lwe_instance GenerateLweInstance(int lambda){
     l->l = lambda;
     l->N = (l->n + 1) * l->l;
     l->m = l->n * l->l;
-    l->B = 4;
+    l->B = 2;
 
     printf("q: %d, n: %d, l: %d, N: %d m: %d", l->q, l->n, l->l, l->N, l->m);
     printf("\n q/B: %d, L: 4,  8 (N+1)^L: %d", l->q/l->B, 8 * pow(l->N + 1, 4));
@@ -283,7 +283,7 @@ byte ByteDecrypt(cbyte b, int * v, lwe_instance lwe){
 
     for(int j = 0; j < BYTE_LENGTH; j++){
         int p = Decrypt(b[j], v, lwe);
-        printf("Decrypt of bit %d of value %d \n", j, p );
+        //printf("Decrypt of bit %d of value %d \n", j, p );
         *c = (*c & ~((unsigned char)1 << j)) | ((unsigned char)p << j);
     }
 
@@ -294,7 +294,7 @@ cbyte ByteXOR(cbyte a, cbyte b, int * v, lwe_instance lwe){
     cbyte c = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
     for(int j = 0; j < BYTE_LENGTH; j++){
         c[j] = HomomorphicXOR(a[j], b[j], lwe);
-        printf("XOR beetwen %d and %d = %d \n",Decrypt(a[j], v, lwe), Decrypt(b[j], v, lwe), Decrypt(c[j], v, lwe) );
+        //printf("XOR beetwen %d and %d = %d \n",Decrypt(a[j], v, lwe), Decrypt(b[j], v, lwe), Decrypt(c[j], v, lwe) );
     }
 
     return c;
