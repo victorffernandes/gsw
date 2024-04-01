@@ -6,6 +6,7 @@
 const int BYTE_LENGTH = 8;
 
 typedef int*** cbyte;
+typedef int** cbit;
 typedef unsigned char byte;
 
 typedef  struct lwe_instance {
@@ -21,11 +22,11 @@ typedef  struct lwe_instance {
 lwe_instance GenerateLweInstance(int lambda){
     lwe_instance * l = (lwe_instance *) malloc(sizeof(lwe_instance));
     l->lambda = lambda;
-    l->n = 4;
+    l->n = 10;
     l->q = 1 << lambda;
     l->l = lambda;
     l->N = (l->n + 1) * l->l;
-    l->m = l->n * l->l;
+    l->m = 2 * l->n * l->l + 1;
     l->B = 2;
 
     printf("q: %d, n: %d, l: %d, N: %d m: %d", l->q, l->n, l->l, l->N, l->m);
@@ -243,9 +244,7 @@ int ** HomomorphicNOT(int ** C1, lwe_instance lwe){
     return applyRows(C4, lwe.N, lwe.N, &Flatten, lwe);
 }
 
-int ** HomomorphicNAND(int ** C1, int ** C2, lwe_instance lwe){
-    int ** Identity = GenerateIdentity(lwe.N, lwe.N);
-
+int ** HomomorphicNAND(int ** C1, int ** C2, int ** Identity, lwe_instance lwe){
     // C3 = C1 * C2
     int ** C3 = MultiplyMatrixxMatrixOverQ(C1, C2, lwe.N, lwe.N, lwe.N, lwe.N, lwe.q);
     // C4 = C3 - In
@@ -255,17 +254,13 @@ int ** HomomorphicNAND(int ** C1, int ** C2, lwe_instance lwe){
 }
 
 int ** HomomorphicXOR(int ** C1, int ** C2,  lwe_instance lwe){
-    int ** NANDC1xC2 = HomomorphicNAND(C1, C2, lwe); // 0 1 = 1
-    int ** N1 = HomomorphicNAND(C1, NANDC1xC2, lwe); // 0 1 = 1
-    int ** N2 = HomomorphicNAND(C2, NANDC1xC2, lwe); // 1 1 = 0
-    int ** xor = HomomorphicNAND(N1, N2, lwe); // 0 1 = 0
-    //xor = HomomorphicNOT(xor, lwe); // 0 0 = 0
-
-    // printf("\n N1: %d \n", Decrypt(N1, v, lwe)); 
-    // printf("\n N2: %d \n", Decrypt(N2, v, lwe));
-    // printf("\n xor: %d \n", Decrypt(xor, v, lwe));
-    // Flatten (C1 * C2 - In)
-    return xor;
+    printf("\n Here \n");
+    int ** Identity = GenerateIdentity(lwe.N, lwe.N);
+    int ** NANDC1xC2 = HomomorphicNAND(C1, C2, Identity, lwe); // 0 1 = 1
+    int ** N1 = HomomorphicNAND(C1, NANDC1xC2, Identity, lwe); // 0 1 = 1
+    int ** N2 = HomomorphicNAND(C2, NANDC1xC2, Identity, lwe); // 1 1 = 0
+    int ** XOR = HomomorphicNAND(N1, N2, Identity, lwe); // 0 1 = 0
+    return XOR;
 }
 
 cbyte ByteEncrypt(byte b, int ** pubKey, lwe_instance lwe){
@@ -278,8 +273,8 @@ cbyte ByteEncrypt(byte b, int ** pubKey, lwe_instance lwe){
     return c;
 }
 
-byte ByteDecrypt(cbyte b, int * v, lwe_instance lwe){
-    byte * c = (byte *) malloc(sizeof(unsigned char));
+uint8_t ByteDecrypt(cbyte b, int * v, lwe_instance lwe){
+    uint8_t * c = (uint8_t *) malloc(sizeof(unsigned char));
 
     for(int j = 0; j < BYTE_LENGTH; j++){
         int p = Decrypt(b[j], v, lwe);
@@ -290,12 +285,49 @@ byte ByteDecrypt(cbyte b, int * v, lwe_instance lwe){
     return *c;
 }
 
-cbyte ByteXOR(cbyte a, cbyte b, int * v, lwe_instance lwe){
+cbyte ByteXOR(cbyte a, cbyte b, lwe_instance lwe){
     cbyte c = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
     for(int j = 0; j < BYTE_LENGTH; j++){
         c[j] = HomomorphicXOR(a[j], b[j], lwe);
-        //printf("XOR beetwen %d and %d = %d \n",Decrypt(a[j], v, lwe), Decrypt(b[j], v, lwe), Decrypt(c[j], v, lwe) );
     }
 
     return c;
+}
+
+void WriteFileCByte(FILE * file, cbyte a, lwe_instance lwe){
+    for(int i = 0; i < BYTE_LENGTH; i++){ // cada bit do byte
+        for(int j  = 0; j < lwe.N; j++){ // cada linha da matriz
+            fwrite(a[i][j], sizeof(int), lwe.N, file); // copia cada inteiro
+        }
+    }
+}
+
+// cbyte ReadFileCByte(FILE * file, lwe_instance lwe){
+//     cbyte cb = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
+//     for(int i = 0; i < BYTE_LENGTH; i++){
+//         cb[i] = (int **) malloc(sizeof(int*) * lwe.N);
+//         for(int j  = 0; j < lwe.N; j++){
+//             cb[i][j] = (int *) malloc(sizeof(int) * lwe.N);
+//             fread(&(cb[i][j]), sizeof(int), lwe.N, file);
+//         }
+//     }
+//     return cb;
+// }
+
+cbyte ReadFileCByte(FILE * file, lwe_instance lwe) {
+    cbyte cb = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
+
+    for(int i = 0; i < BYTE_LENGTH; i++) {
+        cb[i] = (int **) malloc(sizeof(int*) * lwe.N);
+
+        for(int j  = 0; j < lwe.N; j++) {
+            cb[i][j] = (int *) malloc(sizeof(int) * lwe.N);
+            // Read data into the memory pointed to by cb[i][j]
+            fread(cb[i][j], sizeof(int), lwe.N, file);
+            // printVector(cb[i][j], lwe.N, "ReadFileCByte");
+        }
+    }
+
+    // printMatrix(cb[0][0], lwe.N, lwe.N, "ReadFileCByte");
+    return cb;
 }

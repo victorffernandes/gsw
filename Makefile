@@ -5,8 +5,14 @@ run-tests:
 run-local:
 	gcc -g main.c -o builds/main.o -lm && ./builds/main.o
 
-run-bmp:
+run-process-bmp:
 	gcc-13 -g image_process.c -o builds/bmp.o -lm && ./builds/bmp.o
+
+run-write-bmp:
+	gcc-13 -g cipher_image.c -o builds/bmp.o -lm && ./builds/bmp.o 
+
+run-read-bmp:
+	gcc-13 -g decipher_image.c -o builds/bmp.o -lm && ./builds/bmp.o
 
 run-gpu:
 	nvcc -g main.cu -o builds/main.o -lm && ./builds/main.o

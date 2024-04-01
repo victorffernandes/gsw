@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-
 #define DATA_OFFSET_OFFSET 0x000A
 #define WIDTH_OFFSET 0x0012
 #define HEIGHT_OFFSET 0x0016
@@ -17,127 +16,166 @@ typedef unsigned int int32;
 typedef short int16;
 typedef unsigned char byte;
 
-//***Inputs*****
-//fileName: The name of the file to open 
-//***Outputs****
-//pixels: A pointer to a byte array. This will contain the pixel data
-//width: An int pointer to store the width of the image in pixels
-//height: An int pointer to store the height of the image in pixels
-//bytesPerPixel: An int pointer to store the number of bytes per pixel that are used in the image
-void ReadImage(const char *fileName,byte **pixels, int32 *width, int32 *height, int32 *bytesPerPixel)
+#pragma pack(push, 1)
+typedef struct
 {
-        //Open the file for reading in binary mode
-        FILE *imageFile = fopen(fileName, "rb");
-        //Read data offset
-        int32 dataOffset;
-        fseek(imageFile, DATA_OFFSET_OFFSET, SEEK_SET);
-        fread(&dataOffset, 4, 1, imageFile);
-        //Read width
-        fseek(imageFile, WIDTH_OFFSET, SEEK_SET);
-        fread(width, 4, 1, imageFile);
-        //Read height
-        fseek(imageFile, HEIGHT_OFFSET, SEEK_SET);
-        fread(height, 4, 1, imageFile);
-        //Read bits per pixel
-        int16 bitsPerPixel;
-        fseek(imageFile, BITS_PER_PIXEL_OFFSET, SEEK_SET);
-        fread(&bitsPerPixel, 2, 1, imageFile);
-        //Allocate a pixel array
-        *bytesPerPixel = ((int32)bitsPerPixel) / 8;
+        uint16_t type;               // Magic identifier "BM" 2
+        uint32_t size;               // File size in bytes 4
+        uint32_t lambda;          // Not used 2
+        uint32_t offset;             // Offset to image data in bytes from beginning of file 4
+        uint32_t dib_header_size;    // DIB Header size in bytes 4
+        uint32_t width;              // Width of the image 4
+        uint32_t height;             // Height of the image 4
+        uint16_t planes;             // Number of color planes 2
+        uint16_t bits_per_pixel;     // Bits per pixel 2
+        uint32_t compression;        // Compression type 4
+        uint32_t image_size;         // Image size in bytes 4
+        uint32_t x_pixels_per_meter; // Pixels per meter in x axis 4
+        uint32_t y_pixels_per_meter; // Pixels per meter in y axis 4
+        uint32_t colors_used;        // Number of colors used 4
+        uint32_t colors_important;   // Number of important colors 4
+} BMPHeader;
+#pragma pack(pop)
 
-        //Rows are stored bottom-up
-        //Each row is padded to be a multiple of 4 bytes. 
-        //We calculate the padded row size in bytes
-        int paddedRowSize = (int)(4 * floorf(((float)*width * (bitsPerPixel) + 31)/32));
-        printf("row size: %d \n", paddedRowSize);
-        //We are not interested in the padded bytes, so we allocate memory just for
-        //the pixel data
-        int unpaddedRowSize = (*width)*(*bytesPerPixel);
-        //Total size of the pixel data in bytes
-        int totalSize = unpaddedRowSize*(*height);
-        *pixels = (byte*)malloc(totalSize);
-        //Read the pixel data Row by Row.
-        //Data is padded and stored bottom-up
-        int i = 0;
-        //point to the last row of our pixel array (unpadded)
-        byte *currentRowPointer = *pixels+((*height-1)*unpaddedRowSize);
-        for (i = 0; i < *height; i++)
-        {
-                //put file cursor in the next row from top to bottom
-	        fseek(imageFile, dataOffset+(i*paddedRowSize), SEEK_SET);
-	        //read only unpaddedRowSize bytes (we can ignore the padding bytes)
-	        fread(currentRowPointer, 1, unpaddedRowSize, imageFile);
-	        //point to the next row (from bottom to top)
-	        currentRowPointer -= unpaddedRowSize;
-        }
+void write_bmp(const char *filename, BMPHeader header, uint8_t *data)
+{
+        FILE *outfile;
 
-        fclose(imageFile);
+        // // BMP header
+        // header.type = 0x4D42;                       // "BM"
+        // header.size = 14 + 40 + width * height * 3; // File size
+        // header.reserved1 = 0;
+        // header.reserved2 = 0;
+        // header.offset = 54;          // Offset to image data
+        // header.dib_header_size = 40; // Info header size
+        // header.width = width;
+        // header.height = height;
+        // header.planes = 1;
+        // header.bits_per_pixel = 24; // 24-bit color depth
+        // header.compression = 0;
+        // header.image_size = width * height * 3; // Image size
+        // header.x_pixels_per_meter = 0;
+        // header.y_pixels_per_meter = 0;
+        // header.colors_used = 0;
+        // header.colors_important = 0;
+
+        // Open file
+        outfile = fopen(filename, "wb");
+        if (outfile == NULL)
+                return;
+
+        // Write header
+        fwrite(&header, sizeof(BMPHeader), 1, outfile);
+
+        // Write image data
+        fwrite(data, sizeof(byte), header.image_size, outfile);
+
+        // Close file
+        fclose(outfile);
 }
 
-//***Inputs*****
-//fileName: The name of the file to save 
-//pixels: Pointer to the pixel data array
-//width: The width of the image in pixels
-//height: The height of the image in pixels
-//bytesPerPixel: The number of bytes per pixel that are used in the image
-void WriteImage(const char *fileName, byte *pixels, int32 width, int32 height,int32 bytesPerPixel)
+uint8_t * read_bmp(const char *filename, BMPHeader *header)
 {
-        //Open file in binary mode
-        FILE *outputFile = fopen(fileName, "wb");
-        //*****HEADER************//
-        //write signature
-        const char *BM = "BM";
-        fwrite(&BM[0], 1, 1, outputFile);
-        fwrite(&BM[1], 1, 1, outputFile);
-        //Write file size considering padded bytes
-        int paddedRowSize = (int)(4 * floorf(((float)width * ( bytesPerPixel * 8) + 31)/32));
-        int32 fileSize = paddedRowSize*height + HEADER_SIZE + INFO_HEADER_SIZE;
-        fwrite(&fileSize, 4, 1, outputFile);
-        //Write reserved
-        int32 reserved = 0x0000;
-        fwrite(&reserved, 4, 1, outputFile);
-        //Write data offset
-        int32 dataOffset = HEADER_SIZE+INFO_HEADER_SIZE;
-        fwrite(&dataOffset, 4, 1, outputFile);
+        FILE *infile;
 
-        //*******INFO*HEADER******//
-        //Write size
-        int32 infoHeaderSize = INFO_HEADER_SIZE;
-        fwrite(&infoHeaderSize, 4, 1, outputFile);
-        //Write width and height
-        fwrite(&width, 4, 1, outputFile);
-        fwrite(&height, 4, 1, outputFile);
-        //Write planes
-        int16 planes = 1; //always 1
-        fwrite(&planes, 2, 1, outputFile);
-        //write bits per pixel
-        int16 bitsPerPixel = bytesPerPixel * 8;
-        fwrite(&bitsPerPixel, 2, 1, outputFile);
-        //write compression
-        int32 compression = NO_COMPRESION;
-        fwrite(&compression, 4, 1, outputFile);
-        //write image size (in bytes)
-        int32 imageSize = width*height*bytesPerPixel;
-        fwrite(&imageSize, 4, 1, outputFile);
-        //write resolution (in pixels per meter)
-        int32 resolutionX = 11811; //300 dpi
-        int32 resolutionY = 11811; //300 dpi
-        fwrite(&resolutionX, 4, 1, outputFile);
-        fwrite(&resolutionY, 4, 1, outputFile);
-        //write colors used 
-        int32 colorsUsed = MAX_NUMBER_OF_COLORS;
-        fwrite(&colorsUsed, 4, 1, outputFile);
-        //Write important colors
-        int32 importantColors = ALL_COLORS_REQUIRED;
-        fwrite(&importantColors, 4, 1, outputFile);
-        //write data
-        int i = 0;
-        int unpaddedRowSize = width*bytesPerPixel;
-        for ( i = 0; i < height; i++)
+        // Open file
+        infile = fopen(filename, "rb");
+        if (infile == NULL)
         {
-                //start writing from the beginning of last row in the pixel array
-                int pixelOffset = ((height - i) - 1)*unpaddedRowSize;
-                fwrite(&pixels[pixelOffset], 1, paddedRowSize, outputFile);	
+                printf("Error opening file %s\n", filename);
+                return;
         }
-        fclose(outputFile);
+
+        fread(header, sizeof(BMPHeader), 1, infile);
+
+        // Check if it's a valid BMP file
+        if (header->type != 0x4D42)
+        {
+                printf("Invalid BMP file.\n");
+                fclose(infile);
+                return;
+        }
+
+        // Move file pointer to the beginning of image data
+        fseek(infile, header->offset, SEEK_SET);
+
+        // Read image data
+        uint8_t *data = (uint8_t *)malloc(header->image_size);
+        fread(data, sizeof(uint8_t), header->image_size, infile);
+        printf("data 13: %d\n", data[13]);
+
+        // Close file
+        fclose(infile);
+
+        printf("Type: %c%c\n", (char)(header->type & 0xFF), (char)(header->type >> 8));
+        printf("Size: %u bytes\n", header->size);
+        printf("Lambda: %u\n", header->lambda);
+        printf("Offset: %u bytes\n", header->offset);
+        printf("DIB Header Size: %u bytes\n", header->dib_header_size);
+        printf("Width: %d pixels\n", header->width);
+        printf("Height: %d pixels\n", header->height);
+        printf("Planes: %u\n", header->planes);
+        printf("Bits Per Pixel: %u\n", header->bits_per_pixel);
+        printf("Compression: %u\n", header->compression);
+        printf("Image Size: %u bytes\n", header->image_size);
+        printf("X Pixels Per Meter: %d\n", header->x_pixels_per_meter);
+        printf("Y Pixels Per Meter: %d\n", header->y_pixels_per_meter);
+        printf("Colors Used: %u\n", header->colors_used);
+        printf("Colors Important: %u\n", header->colors_important);
+
+        return data;
+}
+
+void write_cbmp(const char *filename, BMPHeader *header, cbyte *data, lwe_instance lwe)
+{
+        FILE *outfile;
+
+        // Open file
+        outfile = fopen(filename, "wb");
+        if (outfile == NULL)
+                return;
+        
+        header->lambda = lwe.lambda;
+
+        // Write header
+        fwrite(header, sizeof(BMPHeader), 1, outfile);
+
+        fseek(outfile, header->offset, SEEK_SET);
+        int bytesPerPixel = header->bits_per_pixel / 8;
+
+        for (int j = 0; j < header->image_size; j++)
+        {
+                WriteFileCByte(outfile, data[j], lwe);
+        }
+
+        // Close file
+        fclose(outfile);
+}
+
+cbyte * read_cbmp(const char *filename, BMPHeader *header)
+{
+        FILE *outfile;
+
+
+        // Open file
+        outfile = fopen(filename, "rb");
+        if (outfile == NULL)
+                return;
+
+        // Write header
+        fread(header, sizeof(BMPHeader), 1, outfile);
+
+        cbyte * data = (cbyte *)malloc(sizeof(cbyte) * header->image_size);
+        lwe_instance lwe = GenerateLweInstance(header->lambda);
+
+        fseek(outfile, header->offset, SEEK_SET);
+        for (int i = 0; i < header->image_size; i++){
+                // printf("im here %d \n", i);
+                data[i] = ReadFileCByte(outfile, lwe);
+        }
+
+        // Close file
+        fclose(outfile);
+
+        return data;
 }

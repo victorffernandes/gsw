@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // int main()
 // {
@@ -76,40 +77,50 @@
 //         return 0;
 // }
 
-int main()
+int main(int argc, char *argv[])
 {
-        BMPHeader header1;
-        cbyte * img_1_cPixels = read_cbmp("resources/cresult.bmp", &header1);
 
-        BMPHeader header2;
-        cbyte * img_2_cPixels = read_cbmp("resources/cresult.bmp", &header2);
+        printf("Argument count: %d\n", argc);
+        printf("Argumentv: %d\n", argv[1]);
 
-
-        if (header1.width != header2.width || 
-                header1.height != header2.height || 
-                header1.bits_per_pixel != header2.bits_per_pixel || 
-                header1.image_size != header2.image_size || 
-                header1.lambda != header2.lambda)
+        if (argc < 3)
         {
-                free(img_1_cPixels);
-                free(img_2_cPixels);
-                printf("Images are not the same size\n");
+                printf("Usage: %s <lambda> <file_name>  \n", argv[0]);
                 return 1;
         }
 
-        cbyte * result_img_cPixels = (cbyte *)malloc(sizeof(cbyte) * header1.image_size);
-        lwe_instance lwe = GenerateLweInstance(header1.lambda);
+        int lambda = atoi(argv[1]);
+        char * f = argv[2];
 
+        srand(4);
+        lwe_instance lwe = GenerateLweInstance(lambda);
 
-        for (int j = 0; j < header1.image_size; j++)
+        int *t = GenerateVector(lwe.n, lwe);
+        int *secretKey = SecretKeyGen(t, lwe);
+        int *v = Powersof2(secretKey, lwe);
+
+        int **publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
+
+        BMPHeader header;
+        char file_name[50] = "resources/";
+        strcat(file_name, f);
+        strcat(file_name, ".bmp");
+
+        uint8_t * data = read_bmp(file_name, &header);
+
+        cbyte *img_1_cPixels = (cbyte *)malloc(sizeof(cbyte) * header.image_size);
+        printf("------------------------------------ \n");
+        for (int j = 0; j < header.image_size; j++)
         {
-                printf(" [%d]", j);
-                result_img_cPixels[j] = ByteXOR(img_1_cPixels[j], img_2_cPixels[j], lwe);
+                printf(" [%d %d]", j, data[j]);
+                img_1_cPixels[j] = ByteEncrypt(data[j], publicKey, lwe);
         }
 
-        // write_cbmp("resources/xor_result.bmp", &header1, result_img_cPixels, lwe);
-        // printf("------------------------------------ \n");
-        // free(img_1_cPixels);
-        // free(img_2_cPixels);
-        // free(result_img_cPixels);
+        char file_name_[50] = "resources/";
+        strcat(file_name_, f);
+        strcat(file_name_, ".cbmp");
+
+        write_cbmp(file_name_, &header, img_1_cPixels, lwe);
+        printVector(t, lwe.n, "t: ");
+        free(img_1_cPixels);
 }

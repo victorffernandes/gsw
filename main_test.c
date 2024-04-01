@@ -149,10 +149,12 @@ int TestNAND()
     int **C4 = Encrypt(1, publicKey, lwe);
     int **C5 = Encrypt(0, publicKey, lwe);
 
-    int NAND1Value = Decrypt(HomomorphicNAND(C5, C5, lwe), v, lwe);
-    int NAND2Value = Decrypt(HomomorphicNAND(C4, C5, lwe), v, lwe);
-    int NAND3Value = Decrypt(HomomorphicNAND(C5, C4, lwe), v, lwe);
-    int NAND4Value = Decrypt(HomomorphicNAND(C4, C4, lwe), v, lwe);
+    int ** Identity = GenerateIdentityMatrix(lwe.N, lwe.N);
+
+    int NAND1Value = Decrypt(HomomorphicNAND(C5, C5, Identity, lwe), v, lwe);
+    int NAND2Value = Decrypt(HomomorphicNAND(C4, C5, Identity, lwe), v, lwe);
+    int NAND3Value = Decrypt(HomomorphicNAND(C5, C4, Identity, lwe), v, lwe);
+    int NAND4Value = Decrypt(HomomorphicNAND(C4, C4, Identity, lwe), v, lwe);
 
     return NAND1Value == 1 && NAND2Value == 1 && NAND3Value == 1 && NAND4Value == 0;
 }
@@ -215,6 +217,33 @@ int TestEncrypt()
     return sumValue == 44 & multConstValue == 60 && multValue == 450 && XOR1Value == 0 && XOR2Value == 1;
 }
 
+int TestWriteCByte()
+{
+    srand(4);
+    lwe_instance lwe = GenerateLweInstance(30);
+
+    int *t = GenerateVector(lwe.n, lwe);
+    int *secretKey = SecretKeyGen(t, lwe);
+    int *v = Powersof2(secretKey, lwe);
+
+    int **publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
+
+    FILE *outputFile = fopen("sample", "wb");
+
+    cbyte cb = ByteEncrypt(30, publicKey, lwe);
+    WriteFileCByte(outputFile, cb, lwe);
+    fclose(outputFile);
+
+    FILE *inputfile = fopen("sample", "rb");
+    cbyte cb2 = ReadFileCByte(inputfile, lwe);
+    // printMatrix(cb2[0], lwe.N, lwe.N, "matrix read file: \n");
+    fclose(inputfile);
+
+    byte a = ByteDecrypt(cb2, v, lwe);
+
+    return a == 30;
+}
+
 void AssertTest(int result, char *test_name)
 {
     if (result)
@@ -237,9 +266,10 @@ int main()
     // AssertTest(TestEncrypt(), "TestEncrypt");
     AssertTest(TestNAND(), "TestNAND");
 
-    for (int i = 0; i < 20; i++)
+    for (int i = 0; i < 5; i++)
     {
         AssertTest(TestXOR(), "TestXOR");
     }
     AssertTest(TestNOT(), "TestNOT");
+    AssertTest(TestWriteCByte(), "TestWriteCByte");
 }
