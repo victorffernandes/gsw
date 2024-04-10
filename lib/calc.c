@@ -196,6 +196,23 @@ int ** GenerateMatrixOverQ(int  rows, int columns, int q){
     return matrix;
 }
 
+int ** GenerateIdentityMultipliedByConst(int rows, int columns, int constant){
+    int ** matrix = (int **)malloc(sizeof(int *) * rows);
+
+    for (int i = 0; i< rows; i++){
+        matrix[i] = (int *)malloc(sizeof(int) * columns);
+        for (int j = 0; j < columns; j++){
+            if(i == j){
+                matrix[i][j] = constant;
+            } else{
+                matrix[i][j] = 0;
+            }
+        }
+    }
+
+    return matrix;
+}
+
 int ** GenerateIdentity(int rows, int columns){
     int ** matrix = (int **)malloc(sizeof(int *) * rows);
 

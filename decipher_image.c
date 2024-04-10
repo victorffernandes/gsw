@@ -5,49 +5,50 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "utils/helpers.c"
 
 
 int main(int argc, char *argv[])
 {
-        printf("Argument count: %d\n", argc);
-        printf("Argumentv: %d\n", argv[1]);
-
-        if (argc < 3)
+        if (argc < 5)
         {
-                printf("Usage: %s <lambda> <file_name>  \n", argv[0]);
+                printf("Usage: %s <origin_file_name>  <target_file_name> <secret-key-vector>\n", argv[0]);
                 return 1;
         }
 
-        int lambda = atoi(argv[1]);
-        char * f = argv[2];
-
-        char file_name_[50] = "resources/";
-        strcat(file_name_, f);
-        strcat(file_name_, ".cbmp");
-
+        char *f = argv[2];
+        char *f_ = argv[3];
 
         BMPHeader header;
-        cbyte * img_1_cPixels = read_cbmp(file_name_, &header);
-
-        uint8_t *data_ = (uint8_t *)malloc(sizeof(uint8_t) * header.image_size);
-
+        cbyte * img_1_cPixels = read_cbmp(f, &header);
         lwe_instance lwe = GenerateLweInstance(header.lambda);
+
         int *t = GenerateVector(lwe.n, lwe);
+
+        if(!formatKey(argv[4], t, lwe.n)){
+                printf("Invalid key format\n");
+                printf("Usage: %s <lambda> <origin_file_name> <target_file_name> <secret-key-vector> \n");
+                return 1;
+        }
+
         int *secretKey = SecretKeyGen(t, lwe);
         int *v = Powersof2(secretKey, lwe);
 
         int **publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
 
-        printf("------------------------------------ \n");
+
+        uint8_t *data_ = (uint8_t *)malloc(sizeof(uint8_t) * header.image_size);
+
         for (int j = 0; j < header.image_size; j++)
         {
                 data_[j] = ByteDecrypt(img_1_cPixels[j], v, lwe);
-                printf(" [%d %d]", j, data_[j]);
         }
 
-        char file_name[50] = "resources/";
-        strcat(file_name, f);
-        strcat(file_name, "_new.bmp");
-
-        write_bmp(file_name, header, data_);
+        write_bmp(f_, header, data_);
+        free(data_);
+        free(img_1_cPixels);
+        free(t);
+        free(secretKey);
+        free(v);
+        free(publicKey);
 }

@@ -141,7 +141,6 @@ void write_cbmp(const char *filename, BMPHeader *header, cbyte *data, lwe_instan
         fwrite(header, sizeof(BMPHeader), 1, outfile);
 
         fseek(outfile, header->offset, SEEK_SET);
-        int bytesPerPixel = header->bits_per_pixel / 8;
 
         for (int j = 0; j < header->image_size; j++)
         {

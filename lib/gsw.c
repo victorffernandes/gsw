@@ -9,7 +9,7 @@ typedef int*** cbyte;
 typedef int** cbit;
 typedef unsigned char byte;
 
-typedef  struct lwe_instance {
+typedef struct lwe_instance {
     int q; // q possui kappa bits (depende de lambda e l)
     int n; // dimensão do reticulado (depende de lambda e l)
     int N; // (n+1) * l
@@ -219,8 +219,7 @@ int ** HomomorphicMult(int ** C1, int ** C2, lwe_instance lwe){
 }
 
 int ** HomomorphicMultByConst(int ** C1, int a, lwe_instance lwe){
-    int ** Identity = GenerateIdentity(lwe.N, lwe.N);
-    int ** mIdentity = MultiplyMatrixEscalarOverQ(a, Identity, lwe.N, lwe.N, lwe.q); // [N, N]
+    int ** mIdentity = GenerateIdentityMultipliedByConst(lwe.N, lwe.N, a);
 
     // Ma = Flatten (In * a)
     int ** Ma = applyRows(mIdentity, lwe.N, lwe.N, &Flatten, lwe);
@@ -254,7 +253,6 @@ int ** HomomorphicNAND(int ** C1, int ** C2, int ** Identity, lwe_instance lwe){
 }
 
 int ** HomomorphicXOR(int ** C1, int ** C2,  lwe_instance lwe){
-    printf("\n Here \n");
     int ** Identity = GenerateIdentity(lwe.N, lwe.N);
     int ** NANDC1xC2 = HomomorphicNAND(C1, C2, Identity, lwe); // 0 1 = 1
     int ** N1 = HomomorphicNAND(C1, NANDC1xC2, Identity, lwe); // 0 1 = 1
@@ -262,6 +260,14 @@ int ** HomomorphicXOR(int ** C1, int ** C2,  lwe_instance lwe){
     int ** XOR = HomomorphicNAND(N1, N2, Identity, lwe); // 0 1 = 0
     return XOR;
 }
+
+// int ** HomomorphicXOR(int ** C1, int ** C2,  lwe_instance lwe){
+//     int ** sum = SumMatrixxMatrix(C1, C2, lwe.N, lwe.N);
+//     int ** mult = MultiplyMatrixxMatrixOverQ(C1, C2, lwe.N, lwe.N, lwe.N, lwe.N, lwe.q);
+//     int ** multConst = HomomorphicMultByConst(mult, -2, lwe);
+//     int ** result = HomomorphicSum(sum, multConst, lwe);
+//     return result;
+// }
 
 cbyte ByteEncrypt(byte b, int ** pubKey, lwe_instance lwe){
     int *** c = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
