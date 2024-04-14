@@ -26,11 +26,11 @@ lwe_instance GenerateLweInstance(int lambda){
     l->q = 1 << lambda;
     l->l = lambda;
     l->N = (l->n + 1) * l->l;
-    l->m = 2 * l->n * l->l + 1;
+    l->m = 2 * l->n * l->l + 1; 
     l->B = 2;
 
     printf("q: %d, n: %d, l: %d, N: %d m: %d", l->q, l->n, l->l, l->N, l->m);
-    printf("\n q/B: %d, L: 4,  8 (N+1)^L: %d", l->q/l->B, 8 * pow(l->N + 1, 4));
+    printf("\n q/B: %d, L: 4,  8 (N+1)^L: %d ", l->q/l->B, 8 * pow(l->N + 1, 4));
     return *l;
 }
 
@@ -253,21 +253,8 @@ int ** HomomorphicNAND(int ** C1, int ** C2, int ** Identity, lwe_instance lwe){
 }
 
 int ** HomomorphicXOR(int ** C1, int ** C2,  lwe_instance lwe){
-    int ** Identity = GenerateIdentity(lwe.N, lwe.N);
-    int ** NANDC1xC2 = HomomorphicNAND(C1, C2, Identity, lwe); // 0 1 = 1
-    int ** N1 = HomomorphicNAND(C1, NANDC1xC2, Identity, lwe); // 0 1 = 1
-    int ** N2 = HomomorphicNAND(C2, NANDC1xC2, Identity, lwe); // 1 1 = 0
-    int ** XOR = HomomorphicNAND(N1, N2, Identity, lwe); // 0 1 = 0
-    return XOR;
+    return HomomorphicSum(C1, C2, lwe);
 }
-
-// int ** HomomorphicXOR(int ** C1, int ** C2,  lwe_instance lwe){
-//     int ** sum = SumMatrixxMatrix(C1, C2, lwe.N, lwe.N);
-//     int ** mult = MultiplyMatrixxMatrixOverQ(C1, C2, lwe.N, lwe.N, lwe.N, lwe.N, lwe.q);
-//     int ** multConst = HomomorphicMultByConst(mult, -2, lwe);
-//     int ** result = HomomorphicSum(sum, multConst, lwe);
-//     return result;
-// }
 
 cbyte ByteEncrypt(byte b, int ** pubKey, lwe_instance lwe){
     int *** c = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
@@ -284,11 +271,19 @@ uint8_t ByteDecrypt(cbyte b, int * v, lwe_instance lwe){
 
     for(int j = 0; j < BYTE_LENGTH; j++){
         int p = Decrypt(b[j], v, lwe);
-        //printf("Decrypt of bit %d of value %d \n", j, p );
         *c = (*c & ~((unsigned char)1 << j)) | ((unsigned char)p << j);
     }
 
     return *c;
+}
+
+cbyte ByteAND(cbyte a, cbyte b, lwe_instance lwe){
+    cbyte c = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
+    for(int j = 0; j < BYTE_LENGTH; j++){
+        c[j] = HomomorphicAND(a[j], b[j], lwe);
+    }
+
+    return c;
 }
 
 cbyte ByteXOR(cbyte a, cbyte b, lwe_instance lwe){
@@ -308,18 +303,6 @@ void WriteFileCByte(FILE * file, cbyte a, lwe_instance lwe){
     }
 }
 
-// cbyte ReadFileCByte(FILE * file, lwe_instance lwe){
-//     cbyte cb = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
-//     for(int i = 0; i < BYTE_LENGTH; i++){
-//         cb[i] = (int **) malloc(sizeof(int*) * lwe.N);
-//         for(int j  = 0; j < lwe.N; j++){
-//             cb[i][j] = (int *) malloc(sizeof(int) * lwe.N);
-//             fread(&(cb[i][j]), sizeof(int), lwe.N, file);
-//         }
-//     }
-//     return cb;
-// }
-
 cbyte ReadFileCByte(FILE * file, lwe_instance lwe) {
     cbyte cb = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
 
@@ -328,12 +311,9 @@ cbyte ReadFileCByte(FILE * file, lwe_instance lwe) {
 
         for(int j  = 0; j < lwe.N; j++) {
             cb[i][j] = (int *) malloc(sizeof(int) * lwe.N);
-            // Read data into the memory pointed to by cb[i][j]
             fread(cb[i][j], sizeof(int), lwe.N, file);
-            // printVector(cb[i][j], lwe.N, "ReadFileCByte");
         }
     }
 
-    // printMatrix(cb[0][0], lwe.N, lwe.N, "ReadFileCByte");
     return cb;
 }

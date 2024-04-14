@@ -21,7 +21,7 @@ typedef struct
 {
         uint16_t type;               // Magic identifier "BM" 2
         uint32_t size;               // File size in bytes 4
-        uint32_t lambda;          // Not used 2
+        uint32_t lambda;             // Not used 2
         uint32_t offset;             // Offset to image data in bytes from beginning of file 4
         uint32_t dib_header_size;    // DIB Header size in bytes 4
         uint32_t width;              // Width of the image 4
@@ -74,7 +74,7 @@ void write_bmp(const char *filename, BMPHeader header, uint8_t *data)
         fclose(outfile);
 }
 
-uint8_t * read_bmp(const char *filename, BMPHeader *header)
+uint8_t *read_bmp(const char *filename, BMPHeader *header)
 {
         FILE *infile;
 
@@ -134,7 +134,7 @@ void write_cbmp(const char *filename, BMPHeader *header, cbyte *data, lwe_instan
         outfile = fopen(filename, "wb");
         if (outfile == NULL)
                 return;
-        
+
         header->lambda = lwe.lambda;
 
         // Write header
@@ -151,24 +151,26 @@ void write_cbmp(const char *filename, BMPHeader *header, cbyte *data, lwe_instan
         fclose(outfile);
 }
 
-cbyte * read_cbmp(const char *filename, BMPHeader *header)
+cbyte *read_cbmp(const char *filename, BMPHeader *header)
 {
         FILE *outfile;
-
 
         // Open file
         outfile = fopen(filename, "rb");
         if (outfile == NULL)
+        {
                 return;
+        }
 
         // Write header
         fread(header, sizeof(BMPHeader), 1, outfile);
 
-        cbyte * data = (cbyte *)malloc(sizeof(cbyte) * header->image_size);
+        cbyte *data = (cbyte *)malloc(sizeof(cbyte) * header->image_size);
         lwe_instance lwe = GenerateLweInstance(header->lambda);
 
         fseek(outfile, header->offset, SEEK_SET);
-        for (int i = 0; i < header->image_size; i++){
+        for (int i = 0; i < header->image_size; i++)
+        {
                 // printf("im here %d \n", i);
                 data[i] = ReadFileCByte(outfile, lwe);
         }

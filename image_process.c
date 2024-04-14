@@ -76,13 +76,23 @@
 //         return 0;
 // }
 
-int main()
+int main(int argc, char *argv[])
 {
+        if (argc < 3)
+        {
+                printf("Usage: %s <origin_file_name_1> <origin_file_name_2> <target_file_name> \n", argv[0]);
+                return 1;
+        }
+
+        char *f1 = argv[2];
+        char *f2 = argv[3];
+        char *r = argv[4];
+
         BMPHeader header1;
-        cbyte * img_1_cPixels = read_cbmp("resources/cresult.bmp", &header1);
+        cbyte * img_1_cPixels = read_cbmp(f1, &header1);
 
         BMPHeader header2;
-        cbyte * img_2_cPixels = read_cbmp("resources/cresult.bmp", &header2);
+        cbyte * img_2_cPixels = read_cbmp(f2, &header2);
 
 
         if (header1.width != header2.width || 
@@ -93,13 +103,12 @@ int main()
         {
                 free(img_1_cPixels);
                 free(img_2_cPixels);
-                printf("Images are not the same size\n");
+                printf("Images are not compatible for processing\n");
                 return 1;
         }
 
         cbyte * result_img_cPixels = (cbyte *)malloc(sizeof(cbyte) * header1.image_size);
         lwe_instance lwe = GenerateLweInstance(header1.lambda);
-
 
         for (int j = 0; j < header1.image_size; j++)
         {
@@ -107,9 +116,11 @@ int main()
                 result_img_cPixels[j] = ByteXOR(img_1_cPixels[j], img_2_cPixels[j], lwe);
         }
 
-        // write_cbmp("resources/xor_result.bmp", &header1, result_img_cPixels, lwe);
+        write_cbmp(r, &header1, result_img_cPixels, lwe);
         // printf("------------------------------------ \n");
-        // free(img_1_cPixels);
-        // free(img_2_cPixels);
-        // free(result_img_cPixels);
+
+        free(img_1_cPixels);
+        free(img_2_cPixels);
+        free(result_img_cPixels);
+        return 0;
 }
