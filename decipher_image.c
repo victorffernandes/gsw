@@ -10,14 +10,16 @@
 
 int main(int argc, char *argv[])
 {
-        if (argc < 5)
+        if (argc < 3)
         {
                 printf("Usage: %s <origin_file_name>  <target_file_name> <secret-key-vector>\n", argv[0]);
                 return 1;
         }
 
-        char *f = argv[2];
-        char *f_ = argv[3];
+        char *f = argv[1];
+        char *f_ = argv[2];
+
+        printf("%s %s %s", argv[1], argv[2], argv[3]);
 
         BMPHeader header;
         cbyte * img_1_cPixels = read_cbmp(f, &header);
@@ -25,7 +27,7 @@ int main(int argc, char *argv[])
 
         int *t = GenerateVector(lwe.n, lwe);
 
-        if(!formatKey(argv[4], t, lwe.n)){
+        if(!formatKey(argv[3], t, lwe.n)){
                 printf("Invalid key format\n");
                 printf("Usage: %s <lambda> <origin_file_name> <target_file_name> <secret-key-vector> \n");
                 return 1;

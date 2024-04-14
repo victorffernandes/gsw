@@ -159,6 +159,7 @@ cbyte *read_cbmp(const char *filename, BMPHeader *header)
         outfile = fopen(filename, "rb");
         if (outfile == NULL)
         {
+                printf("error opening file \n");
                 return;
         }
 

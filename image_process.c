@@ -84,9 +84,9 @@ int main(int argc, char *argv[])
                 return 1;
         }
 
-        char *f1 = argv[2];
-        char *f2 = argv[3];
-        char *r = argv[4];
+        char *f1 = argv[1];
+        char *f2 = argv[2];
+        char *r = argv[3];
 
         BMPHeader header1;
         cbyte * img_1_cPixels = read_cbmp(f1, &header1);

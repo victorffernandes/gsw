@@ -28,5 +28,15 @@ int main()
     byte C5 = ByteDecrypt(BC, v, lwe); // C[N, N]
     byte C6 = ByteDecrypt(OPERATION, v, lwe); // C[N, N]
 
+    int * bVector = GenerateBinaryVector(10);
+
+    int bitSize;
+    unsigned char * m = compressBitArray(bVector, 10, &bitSize);
+    int * h = decompressBitArray(m, 10);
+
+    printVector(bVector, 10, "bVector");
+    printBitVector(m, 2);
+    printVector(h, 10, "h");
+
     printf(" \n result: %d %d %d\n", C4, C5, C6);
 }

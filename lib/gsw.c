@@ -295,13 +295,89 @@ cbyte ByteXOR(cbyte a, cbyte b, lwe_instance lwe){
     return c;
 }
 
+void printBitVector(uint8_t * v, int size){
+    printf("Bit Vector:");
+    for(int n = 0; n < size; n++){
+        for(int j = 0; j < BYTE_LENGTH; j++){
+            int p = (v[n] >> j) & 1; //  int p = (int) (pow(2, i));
+            printf("%d ", p);
+        }   
+    }
+    printf("\n");
+}
+
+void setBit(uint8_t *byte, int pos, int value) {
+    if (value)
+        *byte |= (1 << pos);
+    else
+        *byte &= ~(1 << pos);
+}
+
+void setBitInteger(int *byte, int pos, int value) {
+    if (value)
+        *byte |= (1 << pos);
+    else
+        *byte &= ~(1 << pos);
+}
+
+uint8_t * compressBitArray(int * array, int intSize, int * bitSize){
+    *bitSize = (int) ceil(((double)intSize / (double)BYTE_LENGTH));
+    // printf("newSize %d ", *bitSize);
+    uint8_t * newArray = (uint8_t *) malloc(sizeof(uint8_t) * *bitSize);
+    for(int j = 0; j < *bitSize; j++){ // cada linha da matriz
+        for(int i  = 0; i < BYTE_LENGTH; i++){
+            setBit(&newArray[j], i, (array[j * 8 + i] >> 0) & 1); 
+            // &newArray[j] = (&newArray[j] & ~((uint8_t)1 << 0)) | ((uint8_t)array[j * 8 + i] << 0);
+        }
+    }
+
+    return newArray;
+}
+
+int * decompressBitArray(uint8_t * array, int intSize){
+    int bitSize = (int) ceil(((double)intSize / (double)BYTE_LENGTH));
+    int * newArray = (int *) malloc(sizeof(int) * intSize);
+    for(int j = 0; j < bitSize; j++){ // cada linha da matriz
+        for(int i  = 0; i < BYTE_LENGTH; i++){
+            setBitInteger(&newArray[j * 8 + i], 0, (array[j] >> i) & 1);
+        }
+    }
+
+    return newArray;
+}
+
 void WriteFileCByte(FILE * file, cbyte a, lwe_instance lwe){
+    int bitSize;
     for(int i = 0; i < BYTE_LENGTH; i++){ // cada bit do byte
         for(int j  = 0; j < lwe.N; j++){ // cada linha da matriz
-            fwrite(a[i][j], sizeof(int), lwe.N, file); // copia cada inteiro
+            uint8_t * m = compressBitArray(a[i][j], lwe.N, &bitSize);
+            fwrite(m, sizeof(uint8_t), bitSize, file); // copia cada inteiro 
         }
     }
 }
+
+// void WriteFileCByte(FILE * file, cbyte a, lwe_instance lwe){
+//     for(int i = 0; i < BYTE_LENGTH; i++){ // cada bit do byte
+//         for(int j  = 0; j < lwe.N; j++){ // cada linha da matriz
+//             fwrite(a[i][j], sizeof(int), lwe.N, file); // copia cada inteiro
+//         }
+//     }
+// }
+
+// cbyte ReadFileCByte(FILE * file, lwe_instance lwe) {
+//     cbyte cb = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
+
+//     for(int i = 0; i < BYTE_LENGTH; i++) {
+//         cb[i] = (int **) malloc(sizeof(int*) * lwe.N);
+
+//         for(int j  = 0; j < lwe.N; j++) {
+//             cb[i][j] = (int *) malloc(sizeof(int) * lwe.N);
+//             fread(cb[i][j], sizeof(int), lwe.N, file);
+//         }
+//     }
+
+//     return cb;
+// }
 
 cbyte ReadFileCByte(FILE * file, lwe_instance lwe) {
     cbyte cb = (int ***) malloc(sizeof(int**) * BYTE_LENGTH);
@@ -310,8 +386,12 @@ cbyte ReadFileCByte(FILE * file, lwe_instance lwe) {
         cb[i] = (int **) malloc(sizeof(int*) * lwe.N);
 
         for(int j  = 0; j < lwe.N; j++) {
-            cb[i][j] = (int *) malloc(sizeof(int) * lwe.N);
-            fread(cb[i][j], sizeof(int), lwe.N, file);
+            int bitSize = (int) ceil(((double)lwe.N / (double)BYTE_LENGTH));
+            uint8_t * m = (int *) malloc(sizeof(int) * bitSize);
+            
+            fread(m, sizeof(uint8_t), bitSize, file);
+            
+            cb[i][j] = decompressBitArray(m, lwe.N);
         }
     }
 
