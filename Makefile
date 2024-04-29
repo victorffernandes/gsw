@@ -1,18 +1,18 @@
 
 run-tests:
-	gcc main_test.c -o builds/main_test.o -lm && ./builds/main_test.o
+	nvcc -G main_test.c -o builds/main_test.o -lm && ./builds/main_test.o
 
 run-local:
-	gcc main.c -o builds/main.o -lm && ./builds/main.o
+	nvcc -G main.c -o builds/main.o -lm && ./builds/main.o
 
 build-process-bmp:
-	gcc-13 image_process.c -o builds/process_bmp.o -lm
+	nvcc -G image_process.c -o builds/process_bmp.o -lm -G --forward-unknown-to-host-linker 
 
 build-cipher-bmp:
-	gcc-13 cipher_image.c -o builds/cipher_bmp.o  -lm
+	nvcc -G cipher_image.cu -o builds/cipher_bmp.o  -lm -G --forward-unknown-to-host-linker 
 
 build-read-cipher-bmp:
-	gcc-13 decipher_image.c -o builds/read_cipher_bmp.o -lm
+	nvcc -G decipher_image.c -o builds/read_cipher_bmp.o -lm -G --forward-unknown-to-host-linker 
 
 build-all:
 	make build-process-bmp
@@ -20,4 +20,4 @@ build-all:
 	make build-read-cipher-bmp
 
 run-gpu:
-	nvcc -g main.cu -o builds/main.o -lm && ./builds/main.o
+	nvcc lib/acc_gsw.cu -o builds/gpu.o -lm -G --forward-unknown-to-host-linker && ./builds/gpu.o

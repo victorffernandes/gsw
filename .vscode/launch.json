@@ -8,7 +8,7 @@
             "name": "(gdb) Launch Main",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/main",
+            "program": "${workspaceFolder}/debug/main",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
@@ -27,13 +27,13 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "C/C++: gcc build active file"
+            "preLaunchTask": "Build main file - NVCC"
         },
         {
             "name": "(gdb) Launch Tests",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/main_test",
+            "program": "${workspaceFolder}/debug/main_test",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
@@ -52,7 +52,25 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "C/C++: gcc build active file"
+            "preLaunchTask": "Build tests file - NVCC"
         },
+        {
+            "name": "CUDA Launch - ACC GSW",
+            "type": "cuda-gdb",
+            "request": "launch",
+            "program": "${workspaceFolder}/debug/acc_gsw",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build lib acc_gsw - NVCC"
+        },
+        {
+            "name": "CUDA Launch - Cipher Image",
+            "type": "cuda-gdb",
+            "request": "launch",
+            "program": "${workspaceFolder}/debug/cipher_image",
+            "args": "10 ./resources/sample_6.bmp ./result/sample_6.cbmp",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build cipher_image - NVCC"
+        }
+
     ]
 }

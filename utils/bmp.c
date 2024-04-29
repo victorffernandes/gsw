@@ -83,7 +83,7 @@ uint8_t *read_bmp(const char *filename, BMPHeader *header)
         if (infile == NULL)
         {
                 printf("Error opening file %s\n", filename);
-                return;
+                return NULL;
         }
 
         fread(header, sizeof(BMPHeader), 1, infile);
@@ -93,7 +93,7 @@ uint8_t *read_bmp(const char *filename, BMPHeader *header)
         {
                 printf("Invalid BMP file.\n");
                 fclose(infile);
-                return;
+                return NULL;
         }
 
         // Move file pointer to the beginning of image data
@@ -160,7 +160,7 @@ cbyte *read_cbmp(const char *filename, BMPHeader *header)
         if (outfile == NULL)
         {
                 printf("error opening file \n");
-                return;
+                return NULL;
         }
 
         // Write header
