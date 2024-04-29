@@ -170,24 +170,6 @@ __global__ void GPUGenerateR(int* device_r, int size, int seed)
     device_r[id] = (s[id / 32] >> (id % 32)) & 1;
 }
 
-__global__ void GPUGenerateR_(int* device_r, int size, int seed)
-{
-    int id = threadIdx.x + blockIdx.x * blockDim.x;
-
-    extern __shared__ int s[];
-
-    if (id % 32 == 0)
-    {
-        curandState state;
-
-        curand_init(seed, size, id, &state);
-        int a = curand(&state);
-        s[id / 32] = a;
-    }
-
-    __syncthreads();
-    device_r[id] = (s[id / 32] >> (id % 32)) & 1;
-}
 
 __global__ void GPUGenerateMessageIdentity(int* device_message_identity, int row, int column, int message)
 {
@@ -266,15 +248,12 @@ int* MatrixFreeOnDevice(int** matrix, int rows, int columns)
     return deviceMatrix;
 }
 
-int** MatrixAllocOnHostAsync(int* deviceMatrix, int rows, int columns, cudaStream_t st) {
-    int** matrix = (int**)malloc(sizeof(int*) * rows);
+void MatrixAllocOnHostAsync(int* deviceMatrix, int ** hostMatrix, int rows, int columns, cudaStream_t st) {
 
     for (int i = 0; i < rows; i++) {
-        matrix[i] = (int*)malloc(sizeof(int) * columns);
-        CHECK_CUDA_ERROR(cudaMemcpyAsync(matrix[i], &deviceMatrix[i * columns], (columns) * sizeof(int), cudaMemcpyDeviceToHost, st));
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(hostMatrix[i], &deviceMatrix[i * columns], (columns) * sizeof(int), cudaMemcpyDeviceToHost, st));
     }
-
-    return matrix;
+    CHECK_CUDA_ERROR(cudaFreeAsync(deviceMatrix, st));
 }
 
 void getMemInfo()
@@ -289,6 +268,25 @@ void getMemInfo()
 
     printf("Total Memory: %zu bytes\n", totalMem);
     printf("Free Memory: %zu bytes\n", freeMem);
+}
+
+int* GPUHomomorphicXOR(int ** C1, int ** C2, lwe_instance lwe, cudaStream_t st)
+{
+    dim3 gridNN = getGridForMatrix(lwe.N, lwe.N);
+    dim3 blockNN = getBlockForMatrix(lwe.N, lwe.N);
+
+    int* device_C1 = MatrixAllocOnDeviceAsync(C1, lwe.N, lwe.N, st); // [N, m]
+    int* device_C2 = MatrixAllocOnDeviceAsync(C2, lwe.N, lwe.N, st); // [N, m]
+
+    MatSum <<<gridNN, blockNN, 0, st>>> (device_C1, device_C2, lwe.N * lwe.N);
+    GPUFlatten(device_C1, device_C2, lwe, st);
+
+    CHECK_CUDA_ERROR(cudaFreeAsync(device_C1, st));
+    // CHECK_CUDA_ERROR(cudaFreeAsync(device_RABitDecomp, st));
+    // CHECK_CUDA_ERROR(cudaFreeAsync(device_R, st));
+    // CHECK_CUDA_ERROR(cudaFreeAsync(device_mIdentity, st));
+
+    return device_C2;
 }
 
 int* GPUEnc(int message, int* device_pubKey, lwe_instance lwe, cudaStream_t st)
@@ -306,27 +304,21 @@ int* GPUEnc(int message, int* device_pubKey, lwe_instance lwe, cudaStream_t st)
     int** R = GenerateBinaryMatrix(lwe.N, lwe.m);
     int* device_R = MatrixAllocOnDeviceAsync(R, lwe.N, lwe.m, st); // [N, m]
 
-    // printf(" grid.x: %d block.x: %d", gridNm.x, blockNm.x);
-
-    // GPUGenerateR<<<gridNm, blockNm, ((lwe.N * lwe.m) / 32) * (sizeof(int)), st>>>(device_R, lwe.N * lwe.m, time(NULL));
-
     int* device_RA = MatrixAllocEmptyOnDeviceAsync(lwe.N, lwe.n + 1, st);      // [N, n+1]
     int* device_RABitDecomp = MatrixAllocEmptyOnDeviceAsync(lwe.N, lwe.N, st); // [N, N]
     int* device_mIdentity = MatrixAllocEmptyOnDeviceAsync(lwe.N, lwe.N, st);   // [m, n+1]
 
     GPUGenerateMessageIdentity <<<gridNN, blockNN, 0, st>>> (device_mIdentity, lwe.N, lwe.N, message);
 
-    // compute
     MatMultiplication <<<gridNn1, blockNn1, 0, st>>> (device_R, device_pubKey, device_RA, lwe.N, (lwe.n + 1), lwe.m, lwe);
     GPUBitDecomp <<<gridNn1, blockNn1, 0, st>>> (device_RA, device_RABitDecomp, lwe.N * (lwe.n + 1), lwe.l); // [N, n + 1] -> [N, N]
 
     MatSum <<<gridNN, blockNN, 0, st>>> (device_mIdentity, device_RABitDecomp, lwe.N * lwe.N);
     GPUFlatten(device_mIdentity, device_RABitDecomp, lwe, st);
 
-    // CHECK_CUDA_ERROR(cudaFreeAsync(device_RA, st));
-    // CHECK_CUDA_ERROR(cudaFreeAsync(device_RABitDecomp, st));
-    // CHECK_CUDA_ERROR(cudaFreeAsync(device_R, st));
-    // CHECK_CUDA_ERROR(cudaFreeAsync(device_mIdentity, st));
+    CHECK_CUDA_ERROR(cudaFreeAsync(device_RABitDecomp, st));
+    CHECK_CUDA_ERROR(cudaFreeAsync(device_R, st));
+    CHECK_CUDA_ERROR(cudaFreeAsync(device_RA, st));
 
     return device_mIdentity;
 }
@@ -351,7 +343,22 @@ void synchonizeStreams(cudaStream_t* sts, int n)
     for (int i = 0; i < n; i++)
     {
         CHECK_CUDA_ERROR(cudaStreamSynchronize(sts[i]));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(sts[i]));
     }
+}
+
+int is_gpu_enabled() {
+    int deviceCount;
+    CHECK_CUDA_ERROR(cudaGetDeviceCount(&deviceCount));
+
+    if (deviceCount > 0) {
+        printf("GPU Card available, executing using CUDA");
+    }
+    else {
+        printf("GPU Card unavailable, executing using C");
+    }
+
+    return deviceCount > 0;
 }
 
 // int main()

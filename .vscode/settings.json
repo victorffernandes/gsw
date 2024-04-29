@@ -1,3 +1,20 @@
 {
+    "files.associations": {
+        "*.c": "c",
+        "*.cu": "cuda-cpp",
+        "stdio.h": "c",
+        "stdlib.h": "c",
+        "array": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "iterator": "cpp",
+        "vector": "cpp",
+        "chrono": "cpp",
+        "random": "cpp",
+        "limits": "cpp",
+        "semaphore": "cpp",
+        "algorithm": "cpp",
+        "ratio": "cpp"
+    }
 
 }

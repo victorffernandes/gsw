@@ -23,6 +23,7 @@ typedef struct lwe_instance
 
 lwe_instance GenerateLweInstance(int lambda)
 {
+    srand(time(NULL));
     lwe_instance* l = (lwe_instance*)malloc(sizeof(lwe_instance));
     l->lambda = lambda;
     l->n = 10;
@@ -51,7 +52,6 @@ int MPDecrypt(int** C, int* v, lwe_instance lwe)
     for (int i = 0; i < lwe.l - 2; i++)
     {
         int p = 1 << i;
-        int j = (lwe.l - 2) - i;
         value += (1 << (lwe.l - 2 - i)) * (((checkSUM[i] / p) >> (lwe.l - 2 - i)) & 1);
     }
     printf("estimated value: %d", value);
