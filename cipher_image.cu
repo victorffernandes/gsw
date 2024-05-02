@@ -7,12 +7,11 @@
 #include <string.h>
 #include "utils/helpers.c"
 
-const int CONCURRENT_STREAMS = 16;
-
 void encrypt_image_cpu(cbyte* img_1_cPixels, uint8_t* data, int image_size, int** publicKey, lwe_instance lwe) {
 
     for (int j = 0; j < image_size; j++)
     {
+        printf(" %d", j);
         img_1_cPixels[j] = ByteEncrypt(data[j], publicKey, lwe);
     }
 }
@@ -24,14 +23,6 @@ void encrypt_image_gpu(cbyte* img_1_cPixels, uint8_t* data, int image_size, int*
     int total_streams = image_size * BYTE_LENGTH;
     cudaStream_t * st = (cudaStream_t *) malloc(sizeof(cudaStream_t) * total_streams);
 
-    cudaMemPool_t mempool;
-    cudaDeviceGetDefaultMemPool(&mempool, 0);
-    uint64_t threshold = 0;
-    int enabled = 1;
-    cudaMemPoolSetAttribute(mempool, cudaMemPoolAttrReleaseThreshold, &threshold);
-    cudaMemPoolSetAttribute(mempool, cudaMemPoolReuseAllowInternalDependencies, &enabled);
-    cudaMemPoolSetAttribute(mempool, cudaMemPoolReuseAllowOpportunistic, &enabled);
-
 
     for (int i = 0; i < image_size; i++)
     {
@@ -40,27 +31,23 @@ void encrypt_image_gpu(cbyte* img_1_cPixels, uint8_t* data, int image_size, int*
         for (int j = 0; j < BYTE_LENGTH; j++)
         {
             int st_index = i + BYTE_LENGTH * j;
-            CHECK_CUDA_ERROR(cudaStreamCreate(&st[st_index]));
+            CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&st[st_index], cudaStreamNonBlocking));
 
             int p = (data[i] >> j) & 1;
             int * d_enc = GPUEnc(p, d_pub, lwe, st[st_index]);
 
             c[j] = GenerateEmpty(lwe.N, lwe.N);
             MatrixAllocOnHostAsync(d_enc, c[j], lwe.N, lwe.N, st[st_index]);
+            // PrintStream<<<1,1,0,st[st_index]>>>(i * j);
+
+            CHECK_CUDA_ERROR(cudaStreamDestroy(st[st_index]));
         }
         img_1_cPixels[i] = c;
-
-        // printf(" executed: %d", i);
-        // for (int a = i * BYTE_LENGTH; a < (i + 1) * (BYTE_LENGTH); a++)
-        // {
-        //     CHECK_CUDA_ERROR(cudaStreamSynchronize(st[a]));
-        // }
-        cudaDeviceSynchronize();
     }
 
-    // synchonizeStreams(st, total_streams);
-    // cudaDeviceSynchronize();
+    cudaDeviceSynchronize();
 
+    // synchonizeStreams(st, total_streams);
 }
 
 

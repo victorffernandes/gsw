@@ -84,6 +84,11 @@ __global__ void PrintMatrix(int* matrix, int total)
     }
 }
 
+__global__ void PrintStream(int id)
+{
+    printf(" %d ", id);
+}
+
 __global__ void MatMultiplication(int* lm1, int* cm2, int* rm3, int row, int column, int width, lwe_instance lwe)
 { // [4,3] [3,5]
     int id = threadIdx.x + blockIdx.x * blockDim.x;
@@ -249,7 +254,6 @@ int* MatrixFreeOnDevice(int** matrix, int rows, int columns)
 }
 
 void MatrixAllocOnHostAsync(int* deviceMatrix, int ** hostMatrix, int rows, int columns, cudaStream_t st) {
-
     for (int i = 0; i < rows; i++) {
         CHECK_CUDA_ERROR(cudaMemcpyAsync(hostMatrix[i], &deviceMatrix[i * columns], (columns) * sizeof(int), cudaMemcpyDeviceToHost, st));
     }
@@ -343,7 +347,6 @@ void synchonizeStreams(cudaStream_t* sts, int n)
     for (int i = 0; i < n; i++)
     {
         CHECK_CUDA_ERROR(cudaStreamSynchronize(sts[i]));
-        CHECK_CUDA_ERROR(cudaStreamDestroy(sts[i]));
     }
 }
 
@@ -352,7 +355,9 @@ int is_gpu_enabled() {
     CHECK_CUDA_ERROR(cudaGetDeviceCount(&deviceCount));
 
     if (deviceCount > 0) {
-        printf("GPU Card available, executing using CUDA");
+        cudaSetDevice(0);
+
+        printf("GPU Card available, executing using CUDA devices: %d ", deviceCount);
     }
     else {
         printf("GPU Card unavailable, executing using C");
