@@ -12,15 +12,26 @@ int mod(int m, int l) {
 }
 
 int rand_ringz(int q) {
-    return (rand() % ((q))); // (rand() % (upper - lower + 1)) + (lower); // estava +1 
+    return (rand() % ((q))); // (rand() % (upper - lower + 1)) + (lower); // estava +1  
 }
 
 int rand_error(int max_error) {
-    int v = rand() % ((max_error));
-    if (v != 0) return 0;
+    double u1, u2, z;
 
-    return 1;
-    // return (rand() % ((4))); // (rand() % (upper - lower + 1)) + (lower); // estava +1 
+    // Generate two random numbers uniformly distributed in (0,1)
+    u1 = rand() / (RAND_MAX + 1.0);
+    u2 = rand() / (RAND_MAX + 1.0);
+
+    // Apply the Box-Muller transform
+    z = sqrt(-2.0 * log(u1)) * cos(2 * M_PI * u2);
+
+    // Scale the result and round to the nearest integer
+    int result = round(z * max_error / 6.0); // 6.0 is an empirical factor for scaling
+
+    // Bound the result to ensure it stays within [0, B]
+    result = result < 0 ? 0 : (result > max_error ? max_error : result);
+
+    return result;
 }
 
 void printMatrix(int** m, int r, int c, char* label) {
@@ -207,6 +218,24 @@ int** GenerateEmpty(int  rows, int columns) {
 }
 
 int** GenerateIdentityMultipliedByConst(int rows, int columns, int constant) {
+    int** matrix = (int**)malloc(sizeof(int*) * rows);
+
+    for (int i = 0; i < rows; i++) {
+        matrix[i] = (int*)malloc(sizeof(int) * columns);
+        for (int j = 0; j < columns; j++) {
+            if (i == j) {
+                matrix[i][j] = constant;
+            }
+            else {
+                matrix[i][j] = 0;
+            }
+        }
+    }
+
+    return matrix;
+}
+
+int** GenerateIdentityMultipliedByConstD(int rows, int columns, int constant) {
     int** matrix = (int**)malloc(sizeof(int*) * rows);
 
     for (int i = 0; i < rows; i++) {

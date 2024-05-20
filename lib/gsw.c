@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
+#include <time.h>
 #include "calc.c"
 
 const int BYTE_LENGTH = 8;
@@ -26,14 +27,14 @@ lwe_instance GenerateLweInstance(int lambda)
     srand(time(NULL));
     lwe_instance* l = (lwe_instance*)malloc(sizeof(lwe_instance));
     l->lambda = lambda;
-    l->n = 10;
+    l->n = lambda;
     l->q = 1 << lambda;
     l->l = lambda;
     l->N = (l->n + 1) * l->l;
     l->m = 2 * l->n * l->l + 1;
     l->B = 2;
 
-    // printf("q: %d, n: %d, l: %d, N: %d m: %d", l->q, l->n, l->l, l->N, l->m);
+    printf("q: %d, n: %d, l: %d, N: %d m: %d", l->q, l->n, l->l, l->N, l->m);
     // printf("\n q/B: %d, L: 4,  8 (N+1)^L: %d ", l->q / l->B, 8 * pow(l->N + 1, 4));
     return *l;
 }
@@ -54,7 +55,7 @@ int MPDecrypt(int** C, int* v, lwe_instance lwe)
         int p = 1 << i;
         value += (1 << (lwe.l - 2 - i)) * (((checkSUM[i] / p) >> (lwe.l - 2 - i)) & 1);
     }
-    printf("estimated value: %d", value);
+    printf(" \n estimated value: %d", value);
     return value;
 }
 
@@ -214,7 +215,7 @@ int* SecretKeyGen(int* t, lwe_instance lwe)
     return sk;
 }
 
-int** Encrypt(int message, int** pubKey, lwe_instance lwe)
+int** Encrypt(int  message, int** pubKey, lwe_instance lwe)
 {
     // BitDecomp (R * A)
     int** R = GenerateBinaryMatrix(lwe.N, lwe.m);                                            // [N, m]

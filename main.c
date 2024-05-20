@@ -3,27 +3,9 @@
 #include <math.h>
 
 
-int time_test(int n, int ** pubKey, lwe_instance lwe)
-{
-    clock_t start, end;
-    double cpu_time_used, gpu_time_used;
-
-    start = clock();
-
-    for (int i = 0; i < n; i++)
-    {
-        Encrypt(1, pubKey, lwe); // C[N, N]
-    }
-
-    end = clock();
-    gpu_time_used = (((double)(end - start)) / (double)CLOCKS_PER_SEC);
-
-    printf("\n CPU Encrypt: %f \n", gpu_time_used);
-}
-
 int main()
 {
-    lwe_instance lwe = GenerateLweInstance(30);
+    lwe_instance lwe = GenerateLweInstance(8);
 
     int * t = GenerateVector(lwe.n, lwe);
     int * secretKey = SecretKeyGen(t, lwe);
@@ -31,8 +13,29 @@ int main()
     
     int ** publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
 
-    // int ** C = Encrypt(1, publicKey, lwe); // C[N, N]
-    // int ** C2 = Encrypt(1, publicKey, lwe); // C[N, N]
+    int ** C = Encrypt(1, publicKey, lwe); // C[N, N]
+    int ** C2 = Encrypt(1, publicKey, lwe); // C[N, N]
+    int ** C4 = Encrypt(0, publicKey, lwe); // C[N, N]
+
+
+    int ** C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
+    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
+    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
+    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
+    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
+    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
+    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
+    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
+    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
+    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
+    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
+    C3 = HomomorphicAND(C, C4, lwe); // C[N, N]
+    // C3 = HomomorphicSum(C3, C3, lwe); // C[N, N]
+    // C3 = HomomorphicSum(C3, C3, lwe); // C[N, N]
+
+    int result = Decrypt(C3, v, lwe); // C[N, N]
+
+    printf(" \n result: %d\n", result);
     // unsigned char a = 255;
     // unsigned char b = 189;
     // cbyte AC = ByteEncrypt(b, publicKey, lwe); // C[N, N]
@@ -51,8 +54,6 @@ int main()
     // printVector(bVector, 10, "bVector");
     // printBitVector(m, 2);
     // printVector(h, 10, "h");
-
-    time_test(400, publicKey, lwe);
 
     // printf(" \n result: %d %d %d\n", C4, C5, C6);
 }
