@@ -102,26 +102,10 @@ uint8_t *read_bmp(const char *filename, BMPHeader *header)
         // Read image data
         uint8_t *data = (uint8_t *)malloc(header->image_size);
         fread(data, sizeof(uint8_t), header->image_size, infile);
-        printf("data 13: %d\n", data[13]);
+        printf("size: %d\n", header->image_size);
 
         // Close file
         fclose(infile);
-
-        printf("Type: %c%c\n", (char)(header->type & 0xFF), (char)(header->type >> 8));
-        printf("Size: %u bytes\n", header->size);
-        printf("Lambda: %u\n", header->lambda);
-        printf("Offset: %u bytes\n", header->offset);
-        printf("DIB Header Size: %u bytes\n", header->dib_header_size);
-        printf("Width: %d pixels\n", header->width);
-        printf("Height: %d pixels\n", header->height);
-        printf("Planes: %u\n", header->planes);
-        printf("Bits Per Pixel: %u\n", header->bits_per_pixel);
-        printf("Compression: %u\n", header->compression);
-        printf("Image Size: %u bytes\n", header->image_size);
-        printf("X Pixels Per Meter: %d\n", header->x_pixels_per_meter);
-        printf("Y Pixels Per Meter: %d\n", header->y_pixels_per_meter);
-        printf("Colors Used: %u\n", header->colors_used);
-        printf("Colors Important: %u\n", header->colors_important);
 
         return data;
 }

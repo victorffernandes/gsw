@@ -7,13 +7,12 @@
 #include <string.h>
 #include "utils/helpers.c"
 
-const int MAX_CONCURRENT = 500;
+const int MAX_CONCURRENT = 4000;
 
 void encrypt_image_cpu(cbyte* img_1_cPixels, uint8_t* data, int image_size, int** publicKey, lwe_instance lwe) {
 
     for (int j = 0; j < image_size; j++)
     {
-        printf(" %d", j);
         img_1_cPixels[j] = ByteEncrypt(data[j], publicKey, lwe);
     }
 }

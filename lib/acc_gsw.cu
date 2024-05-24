@@ -6,7 +6,7 @@
 #include <iostream>
 #include <time.h>
 
-#define THREADLIMITPERBLOCK 1024
+#define THREADLIMITPERBLOCK 512
 
 #define CHECK_CUDA_ERROR(val) check((val), #val, __FILE__, __LINE__)
 template <typename T>
@@ -204,13 +204,34 @@ void GPUFlatten(int* device_lin_mat, int* device_lin_mat_temp, lwe_instance lwe,
 int* MatrixAllocOnDeviceAsync(int** matrix, int rows, int columns, cudaStream_t st)
 {
     int* deviceMatrix;
+    int* m_vector = (int*)malloc(sizeof(int) * rows * columns);
     CHECK_CUDA_ERROR(cudaMallocAsync(&deviceMatrix, rows * columns * sizeof(int), st));
-    for (int i = 0; i < rows; i++)
-    {
-        CHECK_CUDA_ERROR(cudaMemcpyAsync(&deviceMatrix[i * columns], matrix[i], (columns) * sizeof(int), cudaMemcpyHostToDevice, st));
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < columns; j++){
+            m_vector[i * rows + j] = matrix[i][j];
+        }
     }
 
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(deviceMatrix, m_vector, (columns * rows) * sizeof(int), cudaMemcpyHostToDevice, st));
+
     return deviceMatrix;
+}
+
+void MatrixAllocOnHostAsync(int* deviceMatrix, int ** hostMatrix, int rows, int columns, cudaStream_t st) {
+
+    int * m_vector = (int*)malloc(sizeof(int) * rows * columns);
+    
+
+    cudaMemcpyAsync(m_vector, deviceMatrix, (columns * rows) * sizeof(int), cudaMemcpyDeviceToHost, st);
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < columns; j++){
+            hostMatrix[i][j] = m_vector[i * rows + j];
+        }
+    }
+
+    // CHECK_CUDA_ERROR(cudaFreeAsync(deviceMatrix, st));
 }
 
 int* MatrixAllocEmptyOnDeviceAsync(int rows, int columns, cudaStream_t st)
@@ -249,13 +270,6 @@ int* MatrixFreeOnDevice(int** matrix, int rows, int columns)
         cudaFree(&deviceMatrix[i * rows]);
     }
     return deviceMatrix;
-}
-
-void MatrixAllocOnHostAsync(int* deviceMatrix, int ** hostMatrix, int rows, int columns, cudaStream_t st) {
-    for (int i = 0; i < rows; i++) {
-        CHECK_CUDA_ERROR(cudaMemcpyAsync(hostMatrix[i], &deviceMatrix[i * columns], (columns) * sizeof(int), cudaMemcpyDeviceToHost, st));
-    }
-    CHECK_CUDA_ERROR(cudaFreeAsync(deviceMatrix, st));
 }
 
 void getMemInfo()
@@ -301,6 +315,8 @@ int* GPUEnc(int message, int* device_pubKey, lwe_instance lwe, cudaStream_t st)
     // mem-alloc
     int** R = GenerateBinaryMatrix(lwe.N, lwe.m);
     int* device_R = MatrixAllocOnDeviceAsync(R, lwe.N, lwe.m, st); // [N, m]
+
+    // GPUGenerateR<<< gridNm, blockNm, 1024, st>>>(device_R, lwe.N, lwe.m);
 
     int* device_RA = MatrixAllocEmptyOnDeviceAsync(lwe.N, lwe.n + 1, st);      // [N, n+1]
     int* device_RABitDecomp = MatrixAllocEmptyOnDeviceAsync(lwe.N, lwe.N, st); // [N, N]

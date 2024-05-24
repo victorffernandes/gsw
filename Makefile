@@ -6,13 +6,13 @@ run-local:
 	nvcc -G main.c -o builds/main.o -lm && ./builds/main.o
 
 build-process-bmp:
-	nvcc -G image_process.c -o builds/process_bmp.o -lm -G --forward-unknown-to-host-linker 
+	nvcc image_process.cu -o builds/process_bmp.o -lm --default-stream per-thread --gpu-architecture=compute_80 --gpu-code=compute_80
 
 build-cipher-bmp:
-	nvcc -G cipher_image.cu -o builds/cipher_bmp.o  -lm -G --forward-unknown-to-host-linker 
+	nvcc cipher_image.cu -o builds/cipher_bmp.o  -lm --default-stream per-thread --gpu-architecture=compute_80 --gpu-code=compute_80
 
 build-read-cipher-bmp:
-	nvcc -G decipher_image.c -o builds/read_cipher_bmp.o -lm -G --forward-unknown-to-host-linker 
+	nvcc decipher_image.c -o builds/read_cipher_bmp.o -lm --default-stream per-thread --gpu-architecture=compute_80 --gpu-code=compute_80
 
 build-all:
 	make build-process-bmp
