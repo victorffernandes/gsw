@@ -7,6 +7,8 @@
 #include <string.h>
 #include "utils/helpers.c"
 
+const int MAX_CONCURRENT = 500;
+
 void encrypt_image_cpu(cbyte* img_1_cPixels, uint8_t* data, int image_size, int** publicKey, lwe_instance lwe) {
 
     for (int j = 0; j < image_size; j++)
@@ -24,32 +26,32 @@ void encrypt_image_gpu(cbyte* img_1_cPixels, uint8_t* data, int image_size, int*
     cudaStream_t * st = (cudaStream_t *) malloc(sizeof(cudaStream_t) * total_streams);
 
 
-    for (int i = 0; i < image_size; i++)
-    {
-        int*** c = (int***)malloc(sizeof(int**) * BYTE_LENGTH);
-
-        for (int j = 0; j < BYTE_LENGTH; j++)
+    for(int step = 0; step < image_size; step+= MAX_CONCURRENT){
+        int nextLimit = step+MAX_CONCURRENT;
+        if(nextLimit > image_size) nextLimit = image_size;
+        for (int i = step; i < nextLimit; i++)
         {
-            int st_index = i + BYTE_LENGTH * j;
-            CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&st[st_index], cudaStreamNonBlocking));
+            int*** c = (int***)malloc(sizeof(int**) * BYTE_LENGTH);
 
-            int p = (data[i] >> j) & 1;
-            int * d_enc = GPUEnc(p, d_pub, lwe, st[st_index]);
+            for (int j = 0; j < BYTE_LENGTH; j++)
+            {
+                int st_index = i + BYTE_LENGTH * j;
+                CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&st[st_index], cudaStreamNonBlocking));
 
-            c[j] = GenerateEmpty(lwe.N, lwe.N);
-            MatrixAllocOnHostAsync(d_enc, c[j], lwe.N, lwe.N, st[st_index]);
-            // PrintStream<<<1,1,0,st[st_index]>>>(i * j);
+                int p = (data[i] >> j) & 1;
+                int * d_enc = GPUEnc(p, d_pub, lwe, st[st_index]);
 
-            CHECK_CUDA_ERROR(cudaStreamDestroy(st[st_index]));
+                c[j] = GenerateEmpty(lwe.N, lwe.N);
+                MatrixAllocOnHostAsync(d_enc, c[j], lwe.N, lwe.N, st[st_index]);
+                // PrintStream<<<1,1,0,st[st_index]>>>(i * j);
+
+                CHECK_CUDA_ERROR(cudaStreamDestroy(st[st_index]));
+            }
+            img_1_cPixels[i] = c;
         }
-        img_1_cPixels[i] = c;
+        cudaDeviceSynchronize();
     }
-
-    cudaDeviceSynchronize();
-
-    // synchonizeStreams(st, total_streams);
 }
-
 
 int main(int argc, char* argv[])
 {
@@ -77,7 +79,9 @@ int main(int argc, char* argv[])
         }
     }
 
-   
+    
+    clock_t start = clock();
+
     int* secretKey = SecretKeyGen(t, lwe);
     int* v = Powersof2(secretKey, lwe);
 
@@ -91,7 +95,6 @@ int main(int argc, char* argv[])
 
 
     if (is_gpu_enabled()) {
-
         encrypt_image_gpu(img_1_cPixels, data, header.image_size, publicKey, lwe);
     }
     else {
@@ -101,6 +104,10 @@ int main(int argc, char* argv[])
 
     write_cbmp(f_, &header, img_1_cPixels, lwe);
     printVector(t, lwe.n, (char *) "t: ");
+
+    clock_t end = clock();
+
+    printf(" time: %f ",(double)(end - start)/ CLOCKS_PER_SEC);
 
 
     free(img_1_cPixels);

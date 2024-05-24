@@ -5,6 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+const int MAX_CONCURRENT = 500;
+
+
 void xor_image_cpu(cbyte* img_1_cPixels, cbyte* img_2_cPixels, cbyte * result_img_cPixels, int image_size, lwe_instance lwe) {
 
         for (int j = 0; j < image_size; j++)
@@ -17,28 +21,41 @@ void xor_image_gpu(cbyte* img_1_cPixels, cbyte* img_2_cPixels, cbyte * result_im
     int total_streams = image_size * BYTE_LENGTH;
     cudaStream_t st[total_streams+1];
 
+    printf(" %d ", image_size);
+
     CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
-    for (int i = 0; i < image_size; i++)
-    {
-        int*** c = (int***)malloc(sizeof(int**) * BYTE_LENGTH);
-
-        for (int j = 0; j < BYTE_LENGTH; j++)
+    for(int step = 0; step < image_size; step+= MAX_CONCURRENT){
+        int nextLimit = step+MAX_CONCURRENT;
+        if(nextLimit > image_size) nextLimit = image_size;
+        for (int i = step; i < nextLimit; i++)
         {
-            int st_index = i + BYTE_LENGTH * j;
-            CHECK_CUDA_ERROR(cudaStreamCreate(&st[st_index]));
+            int*** c = (int***)malloc(sizeof(int**) * BYTE_LENGTH);
 
-            int * d_enc = GPUHomomorphicXOR(img_1_cPixels[i][j], img_2_cPixels[i][j], lwe, st[st_index]);
+            for (int j = 0; j < BYTE_LENGTH; j++)
+            {
+                int st_index = i + BYTE_LENGTH * j;
+                CHECK_CUDA_ERROR(cudaStreamCreate(&st[st_index]));
 
-            c[j] = GenerateEmpty(lwe.N, lwe.N);
-            MatrixAllocOnHostAsync(d_enc, c[j], lwe.N, lwe.N, st[st_index]);
+                int * d_enc = GPUHomomorphicXOR(img_1_cPixels[i][j], img_2_cPixels[i][j], lwe, st[st_index]);
+
+                c[j] = GenerateEmpty(lwe.N, lwe.N);
+                MatrixAllocOnHostAsync(d_enc, c[j], lwe.N, lwe.N, st[st_index]);
+                CHECK_CUDA_ERROR(cudaStreamDestroy(st[st_index]));
+            }
+            result_img_cPixels[i] = c;
         }
-        result_img_cPixels[i] = c;
+        cudaDeviceSynchronize();
+
+        for (int i = step; i < nextLimit; i++)
+        {
+            for (int j = 0; j < BYTE_LENGTH; j++)
+            {
+                FreeMatrix(img_1_cPixels[i][j], lwe.N);
+                FreeMatrix(img_2_cPixels[i][j], lwe.N);
+            }
+        }
     }
-
-    //synchonizeStreams(st, total_streams);
-     cudaDeviceSynchronize();
-
 }
 
 int main(int argc, char *argv[])
@@ -52,6 +69,8 @@ int main(int argc, char *argv[])
         char *f1 = argv[1];
         char *f2 = argv[2];
         char *r = argv[3];
+
+        clock_t start = clock();
 
         BMPHeader header1;
         cbyte * img_1_cPixels = read_cbmp(f1, &header1);
@@ -71,6 +90,7 @@ int main(int argc, char *argv[])
                 printf("Images are not compatible for processing\n");
                 return 1;
         }
+        
 
         cbyte * result_img_cPixels = (cbyte *)malloc(sizeof(cbyte) * header1.image_size);
         lwe_instance lwe = GenerateLweInstance(header1.lambda);
@@ -85,7 +105,11 @@ int main(int argc, char *argv[])
         }
 
         write_cbmp(r, &header1, result_img_cPixels, lwe);
-        // printf("------------------------------------ \n");
+       
+
+        clock_t end = clock();
+
+        printf("\n time: %f ",(double)(end - start)/ CLOCKS_PER_SEC);
 
         free(img_1_cPixels);
         free(img_2_cPixels);

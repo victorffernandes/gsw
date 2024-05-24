@@ -71,7 +71,6 @@ dim3 getGridForMatrix(int rows, int columns)
     }
 
     dim3 grid(requiredNumberOfThreadsPerBlock, 1, 1);
-    // printf("grid [%d] ", requiredNumberOfThreadsPerBlock);
 
     return grid;
 }
@@ -90,7 +89,7 @@ __global__ void PrintStream(int id)
 }
 
 __global__ void MatMultiplication(int* lm1, int* cm2, int* rm3, int row, int column, int width, lwe_instance lwe)
-{ // [4,3] [3,5]
+{
     int id = threadIdx.x + blockIdx.x * blockDim.x;
     int ci = (id % column);
     int ri = (id / column);
@@ -148,7 +147,6 @@ __global__ void GPUBitDecomp(int* v, int* rv, int total, int l)
 
     if (id < total)
     {
-        // printf(" [%d %d %d]", v[id], id*l, id*l + 3);
         for (int i = 0; i < l; i++)
         {
             rv[id * l + i] = (v[id] >> i) & 1;
@@ -285,12 +283,8 @@ int* GPUHomomorphicXOR(int ** C1, int ** C2, lwe_instance lwe, cudaStream_t st)
     MatSum <<<gridNN, blockNN, 0, st>>> (device_C1, device_C2, lwe.N * lwe.N);
     GPUFlatten(device_C1, device_C2, lwe, st);
 
-    CHECK_CUDA_ERROR(cudaFreeAsync(device_C1, st));
-    // CHECK_CUDA_ERROR(cudaFreeAsync(device_RABitDecomp, st));
-    // CHECK_CUDA_ERROR(cudaFreeAsync(device_R, st));
-    // CHECK_CUDA_ERROR(cudaFreeAsync(device_mIdentity, st));
-
-    return device_C2;
+    CHECK_CUDA_ERROR(cudaFreeAsync(device_C2, st));
+    return device_C1;
 }
 
 int* GPUEnc(int message, int* device_pubKey, lwe_instance lwe, cudaStream_t st)
@@ -327,29 +321,6 @@ int* GPUEnc(int message, int* device_pubKey, lwe_instance lwe, cudaStream_t st)
     return device_mIdentity;
 }
 
-void printTimeTaken(clock_t start)
-{
-    double gpu_time_used = (((double)(clock() - start)) / (double)CLOCKS_PER_SEC);
-
-    printf("\nGPU Encrypt: %f \n", gpu_time_used);
-}
-
-void startStreams(cudaStream_t* sts, int n)
-{
-    for (int i = 0; i < n; i++)
-    {
-        CHECK_CUDA_ERROR(cudaStreamCreate(&sts[i]));
-    }
-}
-
-void synchonizeStreams(cudaStream_t* sts, int n)
-{
-    for (int i = 0; i < n; i++)
-    {
-        CHECK_CUDA_ERROR(cudaStreamSynchronize(sts[i]));
-    }
-}
-
 int is_gpu_enabled() {
     int deviceCount;
     CHECK_CUDA_ERROR(cudaGetDeviceCount(&deviceCount));
@@ -365,83 +336,3 @@ int is_gpu_enabled() {
 
     return deviceCount > 0;
 }
-
-// int main()
-// {
-
-//     lwe_instance lwe = GenerateLweInstance(30);
-
-//     int* t = GenerateVector(lwe.n, lwe);
-//     int* secretKey = SecretKeyGen(t, lwe);
-//     int* v = Powersof2(secretKey, lwe);
-//     int** publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
-
-//     // int sample_size = 100;
-//     // int *sample_values = GenerateVector(sample_size, lwe);
-
-//     int* device_pubKey = MatrixAllocOnDevice(publicKey, lwe.m, lwe.n + 1); // [m, n+1]
-
-//     // GPUGenerateR<<<gridNm, blockNm, ((lwe.N * lwe.m) / 32) * (sizeof(int)), 0>>>(device_R, lwe.N * lwe.m, time(NULL));
-
-//     int streamQuantity = 400;
-//     cudaStream_t st[streamQuantity];
-
-//     startStreams(st, streamQuantity);
-
-//     clock_t start = clock();
-
-//     for (int i = 0; i < streamQuantity; i++)
-//     {
-//         int* d_enc = GPUEnc(1, device_pubKey, lwe, st[i]);
-//     }
-
-//     synchonizeStreams(st, streamQuantity);
-
-//     printTimeTaken(start);
-// }
-
-// int main()
-// {
-
-//     lwe_instance lwe = GenerateLweInstance(8);
-
-//     int * t = GenerateVector(lwe.n, lwe);
-//     int * secretKey = SecretKeyGen(t, lwe);
-//     int * v = Powersof2(secretKey, lwe);
-//     int ** publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
-
-//     int sample_size = 100;
-//     int * sample_values = GenerateVector(sample_size, lwe);
-
-//     clock_t start, end;
-//     double cpu_time_used, gpu_time_used;
-
-//     int * device_pubKey = MatrixAllocOnDevice(publicKey, lwe.m, lwe.n + 1, NULL); // [m, n+1]
-
-//     cudaDeviceSynchronize();
-
-//     // CHECK_CUDA_ERROR(cudaStreamSynchronize(st[0]));
-//     start = clock();
-
-//     dim3 gridNm = getGridForMatrix(lwe.N, lwe.m);
-//     dim3 blockNm = getBlockForMatrix(lwe.N, lwe.m);
-
-//     int * device_R = MatrixAllocEmptyOnDevice(lwe.N, lwe.m, 0); // [N, m]
-
-//     GPUGenerateR<<<gridNm, blockNm, (lwe.N * lwe.m) * (sizeof(int)/32) , 0>>>(device_R, lwe.N * lwe.m, time(NULL));
-
-//     int ** m2 = MatrixAllocOnHost(device_R, lwe.N, lwe.m, 0);
-
-//     cudaDeviceSynchronize();
-
-//     end = clock();
-//     gpu_time_used = (((double)(end - start))/(double)CLOCKS_PER_SEC);
-
-//     printf("\nGPU Encrypt: %f \n", gpu_time_used);
-//     printf("\nSpeedUp: %f \n", cpu_time_used/gpu_time_used);
-//     CHECK_LAST_CUDA_ERROR();
-
-//     cudaDeviceReset();
-
-//     return 0;
-// }

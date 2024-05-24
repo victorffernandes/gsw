@@ -293,3 +293,10 @@ int* GenerateBinaryVector(int size) {
 
     return vector;
 }
+
+void FreeMatrix(int ** matrix, int rows) {
+
+    for (int i = 0; i < rows; i++) {
+        free(matrix[i]);
+    }
+}
