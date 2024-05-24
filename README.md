@@ -36,84 +36,76 @@ builds/read_cipher_bmp.o ./result/sample_6.cbmp ./result/sample_6.bmp  "423 753 
 
 ---- Performance TESTS
 
-builds/cipher_bmp.o 10 ./resources/size_8.bmp ./result/size_8.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_8_.bmp ./result/size_8_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-
-builds/cipher_bmp.o 10 ./resources/size_16.bmp ./result/size_16.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_16_.bmp ./result/size_16_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-
-builds/cipher_bmp.o 10 ./resources/size_24.bmp ./result/size_24.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_24_.bmp ./result/size_24_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" && 
-
-builds/cipher_bmp.o 10 ./resources/size_32.bmp ./result/size_32.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_32_.bmp ./result/size_32_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-
-builds/cipher_bmp.o 10 ./resources/size_40.bmp ./result/size_40.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_40_.bmp ./result/size_40_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-
-builds/cipher_bmp.o 10 ./resources/size_48.bmp ./result/size_48.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" && 
-builds/cipher_bmp.o 10 ./resources/size_48_.bmp ./result/size_48_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-
-builds/cipher_bmp.o 10 ./resources/size_56.bmp ./result/size_56.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_56_.bmp ./result/size_56_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-
-builds/cipher_bmp.o 10 ./resources/size_64.bmp ./result/size_64.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" && 
-builds/cipher_bmp.o 10 ./resources/size_64_.bmp ./result/size_64_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77"
-
-
-
-
-
-builds/process_bmp.o ./result/size_8.cbmp ./result/size_8_.cbmp ./result/result_8_xor.cbmp && - 2.521400
-builds/process_bmp.o ./result/size_16.cbmp ./result/size_16_.cbmp ./result/result_16_xor.cbmp && - 14.025346
-builds/process_bmp.o ./result/size_24.cbmp ./result/size_24_.cbmp ./result/result_24_xor.cbmp && - 50.949910 
-builds/process_bmp.o ./result/size_32.cbmp ./result/size_32_.cbmp ./result/result_32_xor.cbmp && - 54.128917
-builds/process_bmp.o ./result/size_40.cbmp ./result/size_40_.cbmp ./result/result_40_xor.cbmp && - 81.783357
-builds/process_bmp.o ./result/size_48.cbmp ./result/size_48_.cbmp ./result/result_48_xor.cbmp && - 119.801958
-builds/process_bmp.o ./result/size_56.cbmp ./result/size_56_.cbmp ./result/result_56_xor.cbmp && - 162.156941
-builds/process_bmp.o ./result/size_64.cbmp ./result/size_64_.cbmp ./result/result_64_xor.cbmp && - 211.657557
-
 
 ----- ENCRYPT ------
 
-builds/cipher_bmp.o 10 ./resources/size_8.bmp ./result/size_8.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_8_.bmp ./result/size_8_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_16.bmp ./result/size_16.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_16_.bmp ./result/size_16_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_24.bmp ./result/size_24.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_24_.bmp ./result/size_24_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" && 
-builds/cipher_bmp.o 10 ./resources/size_32.bmp ./result/size_32.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_32_.bmp ./result/size_32_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_40.bmp ./result/size_40.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_40_.bmp ./result/size_40_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_48.bmp ./result/size_48.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" && 
-builds/cipher_bmp.o 10 ./resources/size_48_.bmp ./result/size_48_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_56.bmp ./result/size_56.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_56_.bmp ./result/size_56_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" &&
-builds/cipher_bmp.o 10 ./resources/size_64.bmp ./result/size_64.cbmp --use-key "423 753 217 42 898 712 728 510 835 77" && 
-builds/cipher_bmp.o 10 ./resources/size_64_.bmp ./result/size_64_.cbmp --use-key "423 753 217 42 898 712 728 510 835 77"
+lambda=4 - cpu
+valgrind --tool=massif --massif-out-file=massif-out/size_8-cpu.out builds/cipher_bmp.o 4 ./resources/size_8.bmp ./result/size_8.cbmp --use-key "11 10 5 15" cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_8_-cpu.out builds/cipher_bmp.o 4 ./resources/size_8_.bmp ./result/size_8_.cbmp --use-key "11 10 5 15" cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_16-cpu.out builds/cipher_bmp.o 4 ./resources/size_16.bmp ./result/size_16.cbmp --use-key "11 10 5 15" cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_16_-cpu.out builds/cipher_bmp.o 4 ./resources/size_16_.bmp ./result/size_16_.cbmp --use-key "11 10 5 15" cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_24-cpu.out builds/cipher_bmp.o 4 ./resources/size_24.bmp ./result/size_24.cbmp --use-key "11 10 5 15" cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_24_-cpu.out builds/cipher_bmp.o 4 ./resources/size_24_.bmp ./result/size_24_.cbmp --use-key "11 10 5 15" cpu && 
+valgrind --tool=massif --massif-out-file=massif-out/size_32-cpu.out builds/cipher_bmp.o 4 ./resources/size_32.bmp ./result/size_32.cbmp --use-key "11 10 5 15" cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_32_-cpu.out builds/cipher_bmp.o 4 ./resources/size_32_.bmp ./result/size_32_.cbmp --use-key "11 10 5 15" cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_40-cpu.out builds/cipher_bmp.o 4 ./resources/size_40.bmp ./result/size_40.cbmp --use-key "11 10 5 15" cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_40_-cpu.out builds/cipher_bmp.o 4 ./resources/size_40_.bmp ./result/size_40_.cbmp --use-key "11 10 5 15" cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_48-cpu.out builds/cipher_bmp.o 4 ./resources/size_48.bmp ./result/size_48.cbmp --use-key "11 10 5 15" cpu && 
+valgrind --tool=massif --massif-out-file=massif-out/size_48_-cpu.out builds/cipher_bmp.o 4 ./resources/size_48_.bmp ./result/size_48_.cbmp --use-key "11 10 5 15" cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_56-cpu.out builds/cipher_bmp.o 4 ./resources/size_56.bmp ./result/size_56.cbmp --use-key "11 10 5 15" cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_56_-cpu.out builds/cipher_bmp.o 4 ./resources/size_56_.bmp ./result/size_56_.cbmp --use-key "11 10 5 15" cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_64-cpu.out builds/cipher_bmp.o 4 ./resources/size_64.bmp ./result/size_64.cbmp --use-key "11 10 5 15" cpu && 
+valgrind --tool=massif --massif-out-file=massif-out/size_64_-cpu.out builds/cipher_bmp.o 4 ./resources/size_64_.bmp ./result/size_64_.cbmp --use-key "11 10 5 15"
 
+lambda=4 - gpu
+valgrind --tool=massif --massif-out-file=massif-out/size_8-gpu.out builds/cipher_bmp.o 4 ./resources/size_8.bmp ./result/size_8.cbmp --use-key "11 10 5 15" gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_8_-gpu.out builds/cipher_bmp.o 4 ./resources/size_8_.bmp ./result/size_8_.cbmp --use-key "11 10 5 15" gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_16-gpu.out builds/cipher_bmp.o 4 ./resources/size_16.bmp ./result/size_16.cbmp --use-key "11 10 5 15" gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_16_-gpu.out builds/cipher_bmp.o 4 ./resources/size_16_.bmp ./result/size_16_.cbmp --use-key "11 10 5 15" gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_24-gpu.out builds/cipher_bmp.o 4 ./resources/size_24.bmp ./result/size_24.cbmp --use-key "11 10 5 15" gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_24_-gpu.out builds/cipher_bmp.o 4 ./resources/size_24_.bmp ./result/size_24_.cbmp --use-key "11 10 5 15" gpu && 
+valgrind --tool=massif --massif-out-file=massif-out/size_32-gpu.out builds/cipher_bmp.o 4 ./resources/size_32.bmp ./result/size_32.cbmp --use-key "11 10 5 15" gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_32_-gpu.out builds/cipher_bmp.o 4 ./resources/size_32_.bmp ./result/size_32_.cbmp --use-key "11 10 5 15" gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_40-gpu.out builds/cipher_bmp.o 4 ./resources/size_40.bmp ./result/size_40.cbmp --use-key "11 10 5 15" gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_40_-gpu.out builds/cipher_bmp.o 4 ./resources/size_40_.bmp ./result/size_40_.cbmp --use-key "11 10 5 15" gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_48-gpu.out builds/cipher_bmp.o 4 ./resources/size_48.bmp ./result/size_48.cbmp --use-key "11 10 5 15" gpu && 
+valgrind --tool=massif --massif-out-file=massif-out/size_48_-gpu.out builds/cipher_bmp.o 4 ./resources/size_48_.bmp ./result/size_48_.cbmp --use-key "11 10 5 15" gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_56-gpu.out builds/cipher_bmp.o 4 ./resources/size_56.bmp ./result/size_56.cbmp --use-key "11 10 5 15" gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_56_-gpu.out builds/cipher_bmp.o 4 ./resources/size_56_.bmp ./result/size_56_.cbmp --use-key "11 10 5 15" gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/size_64-gpu.out builds/cipher_bmp.o 4 ./resources/size_64.bmp ./result/size_64.cbmp --use-key "11 10 5 15" gpu && 
+valgrind --tool=massif --massif-out-file=massif-out/size_64_-gpu.out builds/cipher_bmp.o 4 ./resources/size_64_.bmp ./result/size_64_.cbmp --use-key "11 10 5 15"
 
 ----- PROCESS ------
 
-builds/process_bmp.o ./result/size_8.cbmp ./result/size_8_.cbmp ./result/result_8_xor.cbmp &&
-builds/process_bmp.o ./result/size_16.cbmp ./result/size_16_.cbmp ./result/result_16_xor.cbmp &&
-builds/process_bmp.o ./result/size_24.cbmp ./result/size_24_.cbmp ./result/result_24_xor.cbmp && 
-builds/process_bmp.o ./result/size_32.cbmp ./result/size_32_.cbmp ./result/result_32_xor.cbmp &&
-builds/process_bmp.o ./result/size_40.cbmp ./result/size_40_.cbmp ./result/result_40_xor.cbmp &&
-builds/process_bmp.o ./result/size_48.cbmp ./result/size_48_.cbmp ./result/result_48_xor.cbmp &&
-builds/process_bmp.o ./result/size_56.cbmp ./result/size_56_.cbmp ./result/result_56_xor.cbmp &&
-builds/process_bmp.o ./result/size_64.cbmp ./result/size_64_.cbmp ./result/result_64_xor.cbmp
+cpu
+valgrind --tool=massif --massif-out-file=massif-out/result_8_xor.out builds/process_bmp.o ./result/size_8.cbmp ./result/size_8_.cbmp ./result/result_8_xor.cbmp cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/result_16_xor.out builds/process_bmp.o ./result/size_16.cbmp ./result/size_16_.cbmp ./result/result_16_xor.cbmp cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/result_24_xor.out builds/process_bmp.o ./result/size_24.cbmp ./result/size_24_.cbmp ./result/result_24_xor.cbmp cpu && 
+valgrind --tool=massif --massif-out-file=massif-out/result_32_xor.out builds/process_bmp.o ./result/size_32.cbmp ./result/size_32_.cbmp ./result/result_32_xor.cbmp cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/result_40_xor.out builds/process_bmp.o ./result/size_40.cbmp ./result/size_40_.cbmp ./result/result_40_xor.cbmp cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/result_48_xor.out builds/process_bmp.o ./result/size_48.cbmp ./result/size_48_.cbmp ./result/result_48_xor.cbmp cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/result_56_xor.out builds/process_bmp.o ./result/size_56.cbmp ./result/size_56_.cbmp ./result/result_56_xor.cbmp cpu &&
+valgrind --tool=massif --massif-out-file=massif-out/result_64_xor.out builds/process_bmp.o ./result/size_64.cbmp ./result/size_64_.cbmp ./result/result_64_xor.cbmp cpu
+
+gpu
+valgrind --tool=massif --massif-out-file=massif-out/result_8_xor.out builds/process_bmp.o ./result/size_8.cbmp ./result/size_8_.cbmp ./result/result_8_xor.cbmp gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/result_16_xor.out builds/process_bmp.o ./result/size_16.cbmp ./result/size_16_.cbmp ./result/result_16_xor.cbmp gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/result_24_xor.out builds/process_bmp.o ./result/size_24.cbmp ./result/size_24_.cbmp ./result/result_24_xor.cbmp gpu && 
+valgrind --tool=massif --massif-out-file=massif-out/result_32_xor.out builds/process_bmp.o ./result/size_32.cbmp ./result/size_32_.cbmp ./result/result_32_xor.cbmp gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/result_40_xor.out builds/process_bmp.o ./result/size_40.cbmp ./result/size_40_.cbmp ./result/result_40_xor.cbmp gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/result_48_xor.out builds/process_bmp.o ./result/size_48.cbmp ./result/size_48_.cbmp ./result/result_48_xor.cbmp gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/result_56_xor.out builds/process_bmp.o ./result/size_56.cbmp ./result/size_56_.cbmp ./result/result_56_xor.cbmp gpu &&
+valgrind --tool=massif --massif-out-file=massif-out/result_64_xor.out builds/process_bmp.o ./result/size_64.cbmp ./result/size_64_.cbmp ./result/result_64_xor.cbmp gpu
 
 
 ----- DECRYPT ------
 
-builds/read_cipher_bmp.o ./result/result_8_xor.cbmp ./result/result_8_xor.bmp  "423 753 217 42 898 712 728 510 835 77" &&
-builds/read_cipher_bmp.o ./result/result_16_xor.cbmp ./result/result_16_xor.bmp  "423 753 217 42 898 712 728 510 835 77" &&
-builds/read_cipher_bmp.o ./result/result_24_xor.cbmp ./result/result_24_xor.bmp  "423 753 217 42 898 712 728 510 835 77" &&
-builds/read_cipher_bmp.o ./result/result_32_xor.cbmp ./result/result_32_xor.bmp  "423 753 217 42 898 712 728 510 835 77" &&
-builds/read_cipher_bmp.o ./result/result_40_xor.cbmp ./result/result_40_xor.bmp  "423 753 217 42 898 712 728 510 835 77" &&
-builds/read_cipher_bmp.o ./result/result_48_xor.cbmp ./result/result_48_xor.bmp  "423 753 217 42 898 712 728 510 835 77" &&
-builds/read_cipher_bmp.o ./result/result_56_xor.cbmp ./result/result_56_xor.bmp  "423 753 217 42 898 712 728 510 835 77" &&
-builds/read_cipher_bmp.o ./result/result_64_xor.cbmp ./result/result_64_xor.bmp  "423 753 217 42 898 712 728 510 835 77"
+builds/read_cipher_bmp.o ./result/result_8_xor.cbmp ./result-bmp/result_8_xor.bmp "11 10 5 15" &&
+builds/read_cipher_bmp.o ./result/result_16_xor.cbmp ./result-bmp/result_16_xor.bmp "11 10 5 15" &&
+builds/read_cipher_bmp.o ./result/result_24_xor.cbmp ./result-bmp/result_24_xor.bmp "11 10 5 15" &&
+builds/read_cipher_bmp.o ./result/result_32_xor.cbmp ./result-bmp/result_32_xor.bmp "11 10 5 15" &&
+builds/read_cipher_bmp.o ./result/result_40_xor.cbmp ./result-bmp/result_40_xor.bmp "11 10 5 15" &&
+builds/read_cipher_bmp.o ./result/result_48_xor.cbmp ./result-bmp/result_48_xor.bmp "11 10 5 15" &&
+builds/read_cipher_bmp.o ./result/result_56_xor.cbmp ./result-bmp/result_56_xor.bmp "11 10 5 15" &&
+builds/read_cipher_bmp.o ./result/result_64_xor.cbmp ./result-bmp/result_64_xor.bmp "11 10 5 15"
 

@@ -29,14 +29,12 @@ int main(int argc, char *argv[])
 
         if(!formatKey(argv[3], t, lwe.n)){
                 printf("Invalid key format\n");
-                printf("Usage: %s <lambda> <origin_file_name> <target_file_name> <secret-key-vector> \n");
+                printf("Usage: %s <lambda> <origin_file_name> <target_file_name> <secret-key-vector> \n", argv[3]);
                 return 1;
         }
 
         int *secretKey = SecretKeyGen(t, lwe);
         int *v = Powersof2(secretKey, lwe);
-
-        int **publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
 
 
         uint8_t *data_ = (uint8_t *)malloc(sizeof(uint8_t) * header.image_size);
@@ -52,5 +50,4 @@ int main(int argc, char *argv[])
         free(t);
         free(secretKey);
         free(v);
-        free(publicKey);
 }

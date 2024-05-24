@@ -6,7 +6,7 @@
 #include <iostream>
 #include <time.h>
 
-#define THREADLIMITPERBLOCK 512
+#define THREADLIMITPERBLOCK 1024
 
 #define CHECK_CUDA_ERROR(val) check((val), #val, __FILE__, __LINE__)
 template <typename T>
@@ -231,7 +231,7 @@ void MatrixAllocOnHostAsync(int* deviceMatrix, int ** hostMatrix, int rows, int 
         }
     }
 
-    // CHECK_CUDA_ERROR(cudaFreeAsync(deviceMatrix, st));
+    CHECK_CUDA_ERROR(cudaFreeAsync(deviceMatrix, st));
 }
 
 int* MatrixAllocEmptyOnDeviceAsync(int rows, int columns, cudaStream_t st)

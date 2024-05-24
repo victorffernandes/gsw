@@ -54,7 +54,6 @@ void encrypt_image_gpu(cbyte* img_1_cPixels, uint8_t* data, int image_size, int*
 
 int main(int argc, char* argv[])
 {
-    cudaDeviceReset();
     if (argc < 4)
     {
         printf("Usage: %s <lambda> <origin_file_name> <target_file_name>\n", argv[0]);
@@ -65,6 +64,7 @@ int main(int argc, char* argv[])
     char* f = argv[2];
     char* f_ = argv[3];
     char* should_use_key = argv[4];
+    char* runOn = argv[6];
 
     lwe_instance lwe = GenerateLweInstance(lambda);
     int* t = GenerateVector(lwe.n, lwe);
@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
     cbyte* img_1_cPixels = (cbyte*)malloc(sizeof(cbyte) * header.image_size);
 
 
-    if (is_gpu_enabled()) {
+    if (strcmp(runOn, "gpu") == 0 &&  is_gpu_enabled()) {
         encrypt_image_gpu(img_1_cPixels, data, header.image_size, publicKey, lwe);
     }
     else {

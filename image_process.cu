@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
         char *f1 = argv[1];
         char *f2 = argv[2];
         char *r = argv[3];
+        char* runOn = argv[4];
 
         clock_t start = clock();
 
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
         cbyte * result_img_cPixels = (cbyte *)malloc(sizeof(cbyte) * header1.image_size);
         lwe_instance lwe = GenerateLweInstance(header1.lambda);
 
-        if (is_gpu_enabled()) 
+        if (strcmp(runOn, "gpu") == 0 && is_gpu_enabled()) 
         {
                 xor_image_gpu(img_1_cPixels, img_2_cPixels, result_img_cPixels, header1.image_size, lwe);
         }
