@@ -6,13 +6,13 @@ run-local:
 	nvcc -G main.c -o builds/main.o -lm && ./builds/main.o
 
 build-process-bmp:
-	nvcc image_process.cu -o builds/process_bmp.o -lm --default-stream per-thread --gpu-architecture=compute_80 --gpu-code=compute_80,sm_80
+	nvcc image_process.cu -o builds/process_bmp.o -lm --gpu-architecture=compute_80 --gpu-code=compute_80,sm_80
 
 build-cipher-bmp:
-	nvcc cipher_image.cu -o builds/cipher_bmp.o  -lm --default-stream per-thread --gpu-architecture=compute_80 --gpu-code=compute_80,sm_80
+	nvcc cipher_image.cu -o builds/cipher_bmp.o  -lm --gpu-architecture=compute_80 --gpu-code=compute_80,sm_80
 
 build-read-cipher-bmp:
-	nvcc decipher_image.c -o builds/read_cipher_bmp.o -lm --default-stream per-thread --gpu-architecture=compute_80 --gpu-code=compute_80,sm_80
+	nvcc decipher_image.c -o builds/read_cipher_bmp.o -lm --gpu-architecture=compute_80 --gpu-code=compute_80,sm_80
 
 build-all:
 	make build-process-bmp

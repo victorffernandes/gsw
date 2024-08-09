@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 int formatKey(char str[], int *key, int n)
 {
         char *token = strtok(str, " ");

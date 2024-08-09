@@ -5,7 +5,7 @@
 
 int main()
 {
-    lwe_instance lwe = GenerateLweInstance(8);
+    lwe_instance lwe = GenerateLweInstance(2);
 
     int * t = GenerateVector(lwe.n, lwe);
     int * secretKey = SecretKeyGen(t, lwe);
@@ -15,21 +15,9 @@ int main()
 
     int ** C = Encrypt(1, publicKey, lwe); // C[N, N]
     int ** C2 = Encrypt(1, publicKey, lwe); // C[N, N]
-    int ** C4 = Encrypt(0, publicKey, lwe); // C[N, N]
 
 
-    int ** C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
-    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
-    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
-    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
-    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
-    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
-    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
-    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
-    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
-    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
-    C3 = HomomorphicAND(C, C2, lwe); // C[N, N]
-    C3 = HomomorphicAND(C, C4, lwe); // C[N, N]
+    int ** C3 = HomomorphicNAND(C, C2, NULL, lwe); // C[N, N]
     // C3 = HomomorphicSum(C3, C3, lwe); // C[N, N]
     // C3 = HomomorphicSum(C3, C3, lwe); // C[N, N]
 

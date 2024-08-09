@@ -10,14 +10,14 @@
 
 #define CHECK_CUDA_ERROR(val) check((val), #val, __FILE__, __LINE__)
 template <typename T>
-void check(T err, const char* const func, const char* const file,
-    const int line)
+void check(T err, const char *const func, const char *const file,
+           const int line)
 {
     if (err != cudaSuccess)
     {
         std::cerr << "__________CUDA_ERROR_____________" << std::endl;
         fprintf(stderr, "CUDA ERROR: %s %s %d\n",
-            cudaGetErrorString(err), file, line);
+                cudaGetErrorString(err), file, line);
         if (abort)
         {
             exit(err);
@@ -26,14 +26,14 @@ void check(T err, const char* const func, const char* const file,
 }
 
 #define CHECK_LAST_CUDA_ERROR() checkLast(__FILE__, __LINE__)
-void checkLast(const char* const file, const int line)
+void checkLast(const char *const file, const int line)
 {
-    cudaError_t err{ cudaGetLastError() };
+    cudaError_t err{cudaGetLastError()};
     if (err != cudaSuccess)
     {
         std::cerr << "__________CUDA_ERROR_____________" << std::endl;
         fprintf(stderr, "CUDA ERROR: %s %s %d\n",
-            cudaGetErrorString(err), file, line);
+                cudaGetErrorString(err), file, line);
         if (abort)
         {
             exit(err);
@@ -75,7 +75,7 @@ dim3 getGridForMatrix(int rows, int columns)
     return grid;
 }
 
-__global__ void PrintMatrix(int* matrix, int total)
+__global__ void PrintMatrix(int *matrix, int total)
 {
     for (int i = 0; i < total; i++)
     {
@@ -88,7 +88,7 @@ __global__ void PrintStream(int id)
     printf(" %d ", id);
 }
 
-__global__ void MatMultiplication(int* lm1, int* cm2, int* rm3, int row, int column, int width, lwe_instance lwe)
+__global__ void MatMultiplication(int *lm1, int *cm2, int *rm3, int row, int column, int width, lwe_instance lwe)
 {
     int id = threadIdx.x + blockIdx.x * blockDim.x;
     int ci = (id % column);
@@ -107,7 +107,7 @@ __global__ void MatMultiplication(int* lm1, int* cm2, int* rm3, int row, int col
     }
 }
 
-__global__ void MatSum(int* lm1, int* cm2, int total)
+__global__ void MatSum(int *lm1, int *cm2, int total)
 {
     int id = threadIdx.x + blockIdx.x * blockDim.x;
     if (id < total)
@@ -116,7 +116,7 @@ __global__ void MatSum(int* lm1, int* cm2, int total)
     }
 }
 
-__global__ void MatSub(int* lm1, int* cm2, int* rm3, int total, int width)
+__global__ void MatSub(int *lm1, int *cm2, int *rm3, int total, int width)
 {
     int id = threadIdx.x + blockIdx.x * blockDim.x;
     int ri = id % width;
@@ -127,7 +127,7 @@ __global__ void MatSub(int* lm1, int* cm2, int* rm3, int total, int width)
     }
 }
 
-__global__ void GPUBitDecompInverse(int* bv, int* rv, int total, int l)
+__global__ void GPUBitDecompInverse(int *bv, int *rv, int total, int l)
 { // total must not be the number of bits, but the number of elements in rv
     int id = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -141,7 +141,7 @@ __global__ void GPUBitDecompInverse(int* bv, int* rv, int total, int l)
     }
 }
 
-__global__ void GPUBitDecomp(int* v, int* rv, int total, int l)
+__global__ void GPUBitDecomp(int *v, int *rv, int total, int l)
 {
     int id = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -154,7 +154,7 @@ __global__ void GPUBitDecomp(int* v, int* rv, int total, int l)
     }
 }
 
-__global__ void GPUGenerateR(int* device_r, int size, int seed)
+__global__ void GPUGenerateR(int *device_r, int size, int seed)
 {
     int id = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -173,8 +173,7 @@ __global__ void GPUGenerateR(int* device_r, int size, int seed)
     device_r[id] = (s[id / 32] >> (id % 32)) & 1;
 }
 
-
-__global__ void GPUGenerateMessageIdentity(int* device_message_identity, int row, int column, int message)
+__global__ void GPUGenerateMessageIdentity(int *device_message_identity, int row, int column, int message)
 {
     int id = threadIdx.x + blockIdx.x * blockDim.x; //
 
@@ -191,24 +190,26 @@ __global__ void GPUGenerateMessageIdentity(int* device_message_identity, int row
     }
 }
 
-void GPUFlatten(int* device_lin_mat, int* device_lin_mat_temp, lwe_instance lwe, cudaStream_t st)
+void GPUFlatten(int *device_lin_mat, int *device_lin_mat_temp, lwe_instance lwe, cudaStream_t st)
 {
     dim3 grid = getGridForMatrix(lwe.N, lwe.n + 1);
     dim3 block = getBlockForMatrix(lwe.N, lwe.n + 1);
 
-    GPUBitDecompInverse <<<grid, block, 0, st>>> (device_lin_mat, device_lin_mat_temp, lwe.N * (lwe.n+1), lwe.l); // [N, N] -> [N, n+1]
+    GPUBitDecompInverse<<<grid, block, 0, st>>>(device_lin_mat, device_lin_mat_temp, lwe.N * (lwe.n + 1), lwe.l); // [N, N] -> [N, n+1]
 
-    GPUBitDecomp <<<grid, block, 0, st>>> (device_lin_mat_temp, device_lin_mat, lwe.N * (lwe.n + 1), lwe.l); // [N, n + 1] -> [N, N]
+    GPUBitDecomp<<<grid, block, 0, st>>>(device_lin_mat_temp, device_lin_mat, lwe.N * (lwe.n + 1), lwe.l); // [N, n + 1] -> [N, N]
 }
 
-int* MatrixAllocOnDeviceAsync(int** matrix, int rows, int columns, cudaStream_t st)
+int *MatrixAllocOnDeviceAsync(int **matrix, int rows, int columns, cudaStream_t st)
 {
-    int* deviceMatrix;
-    int* m_vector = (int*)malloc(sizeof(int) * rows * columns);
+    int *deviceMatrix;
+    int *m_vector = (int *)malloc(sizeof(int) * rows * columns);
     CHECK_CUDA_ERROR(cudaMallocAsync(&deviceMatrix, rows * columns * sizeof(int), st));
 
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < columns; j++){
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < columns; j++)
+        {
             m_vector[i * rows + j] = matrix[i][j];
         }
     }
@@ -218,15 +219,17 @@ int* MatrixAllocOnDeviceAsync(int** matrix, int rows, int columns, cudaStream_t 
     return deviceMatrix;
 }
 
-void MatrixAllocOnHostAsync(int* deviceMatrix, int ** hostMatrix, int rows, int columns, cudaStream_t st) {
+void MatrixAllocOnHostAsync(int *deviceMatrix, int **hostMatrix, int rows, int columns, cudaStream_t st)
+{
 
-    int * m_vector = (int*)malloc(sizeof(int) * rows * columns);
-    
+    int *m_vector = (int *)malloc(sizeof(int) * rows * columns);
 
     cudaMemcpyAsync(m_vector, deviceMatrix, (columns * rows) * sizeof(int), cudaMemcpyDeviceToHost, st);
 
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < columns; j++){
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < columns; j++)
+        {
             hostMatrix[i][j] = m_vector[i * rows + j];
         }
     }
@@ -234,17 +237,17 @@ void MatrixAllocOnHostAsync(int* deviceMatrix, int ** hostMatrix, int rows, int 
     CHECK_CUDA_ERROR(cudaFreeAsync(deviceMatrix, st));
 }
 
-int* MatrixAllocEmptyOnDeviceAsync(int rows, int columns, cudaStream_t st)
+int *MatrixAllocEmptyOnDeviceAsync(int rows, int columns, cudaStream_t st)
 {
-    int* deviceMatrix;
+    int *deviceMatrix;
     CHECK_CUDA_ERROR(cudaMallocAsync(&deviceMatrix, rows * columns * sizeof(int), st));
 
     return deviceMatrix;
 }
 
-int* MatrixAllocOnDevice(int** matrix, int rows, int columns)
+int *MatrixAllocOnDevice(int **matrix, int rows, int columns)
 {
-    int* deviceMatrix;
+    int *deviceMatrix;
     CHECK_CUDA_ERROR(cudaMalloc(&deviceMatrix, rows * columns * sizeof(int)));
     for (int i = 0; i < rows; i++)
     {
@@ -254,17 +257,17 @@ int* MatrixAllocOnDevice(int** matrix, int rows, int columns)
     return deviceMatrix;
 }
 
-int* MatrixAllocEmptyOnDevice(int rows, int columns)
+int *MatrixAllocEmptyOnDevice(int rows, int columns)
 {
-    int* deviceMatrix;
+    int *deviceMatrix;
     CHECK_CUDA_ERROR(cudaMalloc(&deviceMatrix, rows * columns * sizeof(int)));
 
     return deviceMatrix;
 }
 
-int* MatrixFreeOnDevice(int** matrix, int rows, int columns)
+int *MatrixFreeOnDevice(int **matrix, int rows, int columns)
 {
-    int* deviceMatrix;
+    int *deviceMatrix;
     for (int i = 0; i < rows; i++)
     {
         cudaFree(&deviceMatrix[i * rows]);
@@ -286,22 +289,22 @@ void getMemInfo()
     printf("Free Memory: %zu bytes\n", freeMem);
 }
 
-int* GPUHomomorphicXOR(int ** C1, int ** C2, lwe_instance lwe, cudaStream_t st)
+int *GPUHomomorphicXOR(int **C1, int **C2, lwe_instance lwe, cudaStream_t st)
 {
     dim3 gridNN = getGridForMatrix(lwe.N, lwe.N);
     dim3 blockNN = getBlockForMatrix(lwe.N, lwe.N);
 
-    int* device_C1 = MatrixAllocOnDeviceAsync(C1, lwe.N, lwe.N, st); // [N, m]
-    int* device_C2 = MatrixAllocOnDeviceAsync(C2, lwe.N, lwe.N, st); // [N, m]
+    int *device_C1 = MatrixAllocOnDeviceAsync(C1, lwe.N, lwe.N, st); // [N, m]
+    int *device_C2 = MatrixAllocOnDeviceAsync(C2, lwe.N, lwe.N, st); // [N, m]
 
-    MatSum <<<gridNN, blockNN, 0, st>>> (device_C1, device_C2, lwe.N * lwe.N);
+    MatSum<<<gridNN, blockNN, 0, st>>>(device_C1, device_C2, lwe.N * lwe.N);
     GPUFlatten(device_C1, device_C2, lwe, st);
 
-    CHECK_CUDA_ERROR(cudaFreeAsync(device_C2, st));
+    // CHECK_CUDA_ERROR(cudaFreeAsync(device_C2, st));
     return device_C1;
 }
 
-int* GPUEnc(int message, int* device_pubKey, lwe_instance lwe, cudaStream_t st)
+int *GPUEnc(int message, int *device_pubKey, lwe_instance lwe, cudaStream_t st)
 {
     dim3 gridNm = getGridForMatrix(lwe.N, lwe.m);
     dim3 blockNm = getBlockForMatrix(lwe.N, lwe.m);
@@ -312,41 +315,45 @@ int* GPUEnc(int message, int* device_pubKey, lwe_instance lwe, cudaStream_t st)
     dim3 gridNN = getGridForMatrix(lwe.N, lwe.N);
     dim3 blockNN = getBlockForMatrix(lwe.N, lwe.N);
 
+    // generate Identity
+    int *device_mIdentity = MatrixAllocEmptyOnDeviceAsync(lwe.N, lwe.N, st); // [m, n+1]
+    GPUGenerateMessageIdentity<<<gridNN, blockNN, 0, st>>>(device_mIdentity, lwe.N, lwe.N, message);
+
     // mem-alloc
-    int** R = GenerateBinaryMatrix(lwe.N, lwe.m);
-    int* device_R = MatrixAllocOnDeviceAsync(R, lwe.N, lwe.m, st); // [N, m]
+    int **R = GenerateBinaryMatrix(lwe.N, lwe.m);
+    int *device_R = MatrixAllocOnDeviceAsync(R, lwe.N, lwe.m, st); // [N, m]
 
-    // GPUGenerateR<<< gridNm, blockNm, 1024, st>>>(device_R, lwe.N, lwe.m);
+    int *device_RA = MatrixAllocEmptyOnDeviceAsync(lwe.N, lwe.n + 1, st); // [N, n+1]
+    MatMultiplication<<<gridNn1, blockNn1, 0, st>>>(device_R, device_pubKey, device_RA, lwe.N, (lwe.n + 1), lwe.m, lwe);
 
-    int* device_RA = MatrixAllocEmptyOnDeviceAsync(lwe.N, lwe.n + 1, st);      // [N, n+1]
-    int* device_RABitDecomp = MatrixAllocEmptyOnDeviceAsync(lwe.N, lwe.N, st); // [N, N]
-    int* device_mIdentity = MatrixAllocEmptyOnDeviceAsync(lwe.N, lwe.N, st);   // [m, n+1]
+    int *device_RABitDecomp = MatrixAllocEmptyOnDeviceAsync(lwe.N, lwe.N, st);                             // [N, N]
+    GPUBitDecomp<<<gridNn1, blockNn1, 0, st>>>(device_RA, device_RABitDecomp, lwe.N * (lwe.n + 1), lwe.l); // [N, n + 1] -> [N, N]
 
-    GPUGenerateMessageIdentity <<<gridNN, blockNN, 0, st>>> (device_mIdentity, lwe.N, lwe.N, message);
+    MatSum<<<gridNN, blockNN, 0, st>>>(device_mIdentity, device_RABitDecomp, lwe.N * lwe.N);
 
-    MatMultiplication <<<gridNn1, blockNn1, 0, st>>> (device_R, device_pubKey, device_RA, lwe.N, (lwe.n + 1), lwe.m, lwe);
-    GPUBitDecomp <<<gridNn1, blockNn1, 0, st>>> (device_RA, device_RABitDecomp, lwe.N * (lwe.n + 1), lwe.l); // [N, n + 1] -> [N, N]
+    CHECK_CUDA_ERROR(cudaFreeAsync(device_R, st));
+    CHECK_CUDA_ERROR(cudaFreeAsync(device_RA, st));
 
-    MatSum <<<gridNN, blockNN, 0, st>>> (device_mIdentity, device_RABitDecomp, lwe.N * lwe.N);
     GPUFlatten(device_mIdentity, device_RABitDecomp, lwe, st);
 
     CHECK_CUDA_ERROR(cudaFreeAsync(device_RABitDecomp, st));
-    CHECK_CUDA_ERROR(cudaFreeAsync(device_R, st));
-    CHECK_CUDA_ERROR(cudaFreeAsync(device_RA, st));
 
     return device_mIdentity;
 }
 
-int is_gpu_enabled() {
+int is_gpu_enabled()
+{
     int deviceCount;
     CHECK_CUDA_ERROR(cudaGetDeviceCount(&deviceCount));
 
-    if (deviceCount > 0) {
+    if (deviceCount > 0)
+    {
         cudaSetDevice(0);
 
         printf("GPU Card available, executing using CUDA devices: %d ", deviceCount);
     }
-    else {
+    else
+    {
         printf("GPU Card unavailable, executing using C");
     }
 

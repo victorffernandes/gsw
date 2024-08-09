@@ -18,8 +18,9 @@ int main(int argc, char *argv[])
 
         char *f = argv[1];
         char *f_ = argv[2];
+        char * t_ = argv[3];
 
-        printf("%s %s %s", argv[1], argv[2], argv[3]);
+        // printf("%s %s %s", argv[1], argv[2], argv[3]);
 
         BMPHeader header;
         cbyte * img_1_cPixels = read_cbmp(f, &header);
