@@ -1,6 +1,6 @@
 
 run-tests:
-	nvcc -G main_test.c -o builds/main_test.o -lm && ./builds/main_test.o
+	nvcc -G tests.c -o builds/main_test.o -lm && ./builds/main_test.o
 
 run-local:
 	nvcc -G main.c -o builds/main.o -lm && ./builds/main.o

@@ -5,10 +5,17 @@
 #include <time.h>
 #include "calc.c"
 
+enum BitSecurity {
+    SECURITY_32 = 0,
+    SECURITY_64 = 1,
+    SECURITY_128 = 2,
+    SECURITY_192 = 3
+} typedef BitSecurity;
+
 const int BYTE_LENGTH = 8;
 
-typedef int ***cbyte;
-typedef int **cbit;
+typedef int*** cbyte;
+typedef int** cbit;
 typedef unsigned char byte;
 
 typedef struct lwe_instance
@@ -19,35 +26,58 @@ typedef struct lwe_instance
     int l;      // l bits of q
     int m;      // arbitrary parameter  (depende de lambda e l)
     int B;      // B bounded error
-    int lambda; // security parameter
+    BitSecurity lambda; // security parameter
 } lwe_instance;
 
-lwe_instance GenerateLweInstance(int lambda)
+lwe_instance GenerateLweInstance(BitSecurity lambda)
 {
-    srand(time(NULL));
-    lwe_instance *l = (lwe_instance *)malloc(sizeof(lwe_instance));
+    srand(10);
+    lwe_instance* l = (lwe_instance*)malloc(sizeof(lwe_instance));
     l->lambda = lambda;
-    l->n = lambda;
-    l->q = 1 << lambda;
-    l->l = lambda;
-    l->N = (l->n + 1) * l->l;
-    l->m = 2 * l->n * l->l + 1;
-    l->B = 2;
+
+    switch (l->lambda)
+    {
+    case SECURITY_32:
+        l->n = 35;
+        l->q = 1 << 12;
+        l->B = 10;
+        break;
+    case SECURITY_64:
+        l->n = 210;
+        l->q = 1 << 22;
+        l->B = 100;
+        break;
+    case SECURITY_128:
+        l->n = 600;
+        l->q = 1 << 26;
+        l->B = 100;
+        break;
+    case SECURITY_192:
+        l->n = 600;
+        l->q = 1 << 12;
+        break;
+
+    default:
+        break;
+    }
+    l->l = log2(l->q);
+    l->N = (l->n + 1) * l->l; // 
+    l->m = 2 * l->n * (l->l + 1);
 
     // printf("q: %d, n: %d, l: %d, N: %d m: %d", l->q, l->n, l->l, l->N, l->m);
-    // printf("\n q/B: %d, L: 4,  8 (N+1)^L: %d ", l->q / l->B, 8 * pow(l->N + 1, 4));
+    printf("\n q/B: %d, L: 1,  8 (N+1)^L: %f ", l->q / (l->B - 1), 8.0f * pow(l->N + 1, 1));
     return *l;
 }
 
-int Decrypt(int **C, int *v, lwe_instance lwe)
+int Decrypt(int** C, int* v, lwe_instance lwe)
 {
     float message = mod((InternalProduct(C[lwe.l - 1], v, lwe.N)), lwe.q) / v[lwe.l - 1];
     return (int)message;
 }
 
-int MPDecrypt(int **C, int *v, lwe_instance lwe)
+int MPDecrypt(int** C, int* v, lwe_instance lwe)
 {
-    int *checkSUM = MultiplyVectorxMatrixOverQ(v, C, lwe.N, lwe.N, lwe.q); // [N]
+    int* checkSUM = MultiplyVectorxMatrixOverQ(v, C, lwe.N, lwe.N, lwe.q); // [N]
 
     int value = 0;
     for (int i = 0; i < lwe.l - 2; i++)
@@ -59,13 +89,13 @@ int MPDecrypt(int **C, int *v, lwe_instance lwe)
     return value;
 }
 
-int **GenerateG(lwe_instance lwe)
+int** GenerateG(lwe_instance lwe)
 {
-    int **matrix = (int **)malloc(sizeof(int *) * lwe.n);
+    int** matrix = (int**)malloc(sizeof(int*) * lwe.n);
 
     for (int i = 0; i < lwe.N; i++)
     {
-        matrix[i] = (int *)malloc(sizeof(int) * lwe.n + 1);
+        matrix[i] = (int*)malloc(sizeof(int) * lwe.n + 1);
         for (int j = 0; j < lwe.n + 1; j++)
         {
             //  int p = (int) (pow(2, i));
@@ -81,9 +111,9 @@ int **GenerateG(lwe_instance lwe)
     return matrix;
 }
 
-int **applyRows(int **matrix, int rows, int size, int *(*f)(int *v, int s, lwe_instance l), lwe_instance lwe)
+int** applyRows(int** matrix, int rows, int size, int* (*f)(int* v, int s, lwe_instance l), lwe_instance lwe)
 {
-    int **result = (int **)malloc(sizeof(int *) * rows);
+    int** result = (int**)malloc(sizeof(int*) * rows);
 
     for (int j = 0; j < rows; j++)
     {
@@ -93,9 +123,9 @@ int **applyRows(int **matrix, int rows, int size, int *(*f)(int *v, int s, lwe_i
     return result;
 }
 
-int *BitDecomp(int *vector, int size, lwe_instance lwe)
+int* BitDecomp(int* vector, int size, lwe_instance lwe)
 {
-    int *result = (int *)malloc(sizeof(int) * size * lwe.l);
+    int* result = (int*)malloc(sizeof(int) * size * lwe.l);
 
     for (int j = 0; j < size; j++)
     {
@@ -108,10 +138,10 @@ int *BitDecomp(int *vector, int size, lwe_instance lwe)
     return result;
 }
 
-int *BitDecompInverse(int *bitVector, int size, lwe_instance lwe)
+int* BitDecompInverse(int* bitVector, int size, lwe_instance lwe)
 {
     int inverseSize = (size / lwe.l);
-    int *result = (int *)malloc(sizeof(int) * (size / lwe.l));
+    int* result = (int*)malloc(sizeof(int) * (size / lwe.l));
 
     for (int j = 0; j < inverseSize; j++)
     {
@@ -126,15 +156,17 @@ int *BitDecompInverse(int *bitVector, int size, lwe_instance lwe)
     return result;
 }
 
-int *Flatten(int *bitVector, int size, lwe_instance lwe)
+int* Flatten(int* bitVector, int size, lwe_instance lwe)
 {
-    int *v = BitDecompInverse(bitVector, size, lwe);
-    return BitDecomp(v, size / lwe.l, lwe);
+    int* v = BitDecompInverse(bitVector, size, lwe);
+    int* r = BitDecomp(v, size / lwe.l, lwe);
+    // free(v);
+    return r;
 }
 
-int *Powersof2(int *b, lwe_instance lwe)
+int* Powersof2(int* b, lwe_instance lwe)
 {
-    int *result = (int *)malloc(sizeof(int) * lwe.N);
+    int* result = (int*)malloc(sizeof(int) * lwe.N);
 
     for (int j = 0; j < (lwe.n + 1); j++)
     {
@@ -147,9 +179,9 @@ int *Powersof2(int *b, lwe_instance lwe)
     return result;
 }
 
-int *Powersof2_(int *b, int k, int l)
+int* Powersof2_(int* b, int k, int l)
 {
-    int *result = (int *)malloc(sizeof(int) * k * l);
+    int* result = (int*)malloc(sizeof(int) * k * l);
 
     for (int i = 0; i < k; i++)
     {
@@ -162,9 +194,9 @@ int *Powersof2_(int *b, int k, int l)
     return result;
 }
 
-int *GenerateVector(int size, lwe_instance lwe)
+int* GenerateVector(int size, lwe_instance lwe)
 {
-    int *vector = (int *)malloc(sizeof(int) * size);
+    int* vector = (int*)malloc(sizeof(int) * size);
 
     for (int i = 0; i < size; i++)
     {
@@ -175,17 +207,19 @@ int *GenerateVector(int size, lwe_instance lwe)
     return vector;
 }
 
-int **PublicKeyGen(int *t, lwe_instance lwe)
+int** PublicKeyGen(int* t, lwe_instance lwe)
 {
-    int *error = GenerateErrorVector(lwe.m, lwe.B);
-    int **B = GenerateMatrixOverQ(lwe.m, lwe.n, lwe.q);
-    int *b = SumVectorOverQ(MultiplyVectorxMatrixOverQ(t, B, lwe.m, lwe.n, lwe.q), error, lwe.m, lwe.q);
+    int* error = GenerateErrorVector(lwe.m, lwe.B);
+    // printVector(error, lwe.m, "error");
+    int** B = GenerateMatrixOverQ(lwe.m, lwe.n, lwe.q);
+    int* temp = MultiplyVectorxMatrix(t, B, lwe.m, lwe.n);
+    int* b = SumVectorOverQ(temp, error, lwe.m, lwe.q);
 
-    int **A = (int **)malloc(sizeof(int *) * (lwe.m));
+    int** A = (int**)malloc(sizeof(int*) * (lwe.m));
     // set first column of A with b
     for (int k = 0; k < lwe.m; k++)
     {
-        A[k] = (int *)malloc(sizeof(int *) * (lwe.n + 1));
+        A[k] = (int*)malloc(sizeof(int*) * (lwe.n + 1));
         A[k][0] = b[k];
     }
 
@@ -198,16 +232,19 @@ int **PublicKeyGen(int *t, lwe_instance lwe)
         }
     }
 
-    // TODO: must free B, b and error
+    // free(error);
+    // free(temp);
+    // free(b);
+    // FreeMatrix(B, lwe.m);
     return A; // [m, n+1]
 }
 
-int *SecretKeyGen(int *t, lwe_instance lwe)
+int* SecretKeyGen(int* t, lwe_instance lwe)
 {
-    int *sk = (int *)malloc(sizeof(int) * (lwe.n + 1));
+    int* sk = (int*)malloc(sizeof(int) * (lwe.n + 1));
     for (int i = 1; i < lwe.n + 1; i++)
     {
-        sk[i] = lwe.q - t[i - 1]; // antes era - t[i-1]
+        sk[i] = -t[i - 1]; // antes era - t[i-1]
     }
 
     sk[0] = 1;
@@ -215,85 +252,92 @@ int *SecretKeyGen(int *t, lwe_instance lwe)
     return sk;
 }
 
-int **Encrypt(int message, int **pubKey, lwe_instance lwe)
+int** Encrypt(int message, int** pubKey, lwe_instance lwe)
 {
     // BitDecomp (R * A)
-    int **R = GenerateBinaryMatrix(lwe.N, lwe.m);                                            // [N, m]
-    int **RA = MultiplyMatrixxMatrixOverQ(R, pubKey, lwe.N, lwe.m, lwe.m, lwe.n + 1, lwe.q); // [N, n+1]
+    int** R = GenerateBinaryMatrix(lwe.N, lwe.m);                                            // [N, m]
+    int** RA = MultiplyMatrixxMatrixOverQ(R, pubKey, lwe.N, lwe.m, lwe.n + 1, lwe.q); // [N, n+1]
 
-    int **BitDecomRA = applyRows(RA, lwe.N, lwe.n + 1, &BitDecomp, lwe); // r [N, N]
+    int** BitDecomRA = applyRows(RA, lwe.N, lwe.n + 1, &BitDecomp, lwe); // r [N, N]
 
     // // m * In
-    int **Identity = GenerateIdentity(lwe.N, lwe.N);
-    int **mIdentity = MultiplyMatrixEscalarOverQ(message, Identity, lwe.N, lwe.N, lwe.q); // [N, N]
+    int** Identity = GenerateIdentity(lwe.N, lwe.N);
+    int** mIdentity = MultiplyMatrixEscalarOverQ(message, Identity, lwe.N, lwe.N, lwe.q); // [N, N]
 
     // m*In + BitDecomp(R * A)
-    int **sum = SumMatrixxMatrix(mIdentity, BitDecomRA, lwe.N, lwe.N); // [N, N]
+    int** sum = SumMatrixxMatrix(mIdentity, BitDecomRA, lwe.N, lwe.N); // [N, N]
 
     // Flatten (m*In + BitDecomp(R * A))
-    int **C = applyRows(sum, lwe.N, lwe.N, &Flatten, lwe);
+    int** C = applyRows(sum, lwe.N, lwe.N, &Flatten, lwe);
+
+    // FreeMatrix(R, lwe.N);
+    // FreeMatrix(RA, lwe.N);
+    // FreeMatrix(BitDecomRA, lwe.N);
+    // FreeMatrix(Identity, lwe.N);
+    // FreeMatrix(mIdentity, lwe.N);
+    // FreeMatrix(sum, lwe.N);
 
     return C;
 }
 
-int **HomomorphicSum(int **C1, int **C2, lwe_instance lwe)
+int** HomomorphicSum(int** C1, int** C2, lwe_instance lwe)
 {
-    int **C3 = SumMatrixxMatrix(C1, C2, lwe.N, lwe.N);
+    int** C3 = SumMatrixxMatrix(C1, C2, lwe.N, lwe.N);
     return applyRows(C3, lwe.N, lwe.N, &Flatten, lwe);
 }
 
-int **HomomorphicMult(int **C1, int **C2, lwe_instance lwe)
+int** HomomorphicMult(int** C1, int** C2, lwe_instance lwe)
 {
-    int **C3 = MultiplyMatrixxMatrixOverQ(C1, C2, lwe.N, lwe.N, lwe.N, lwe.N, lwe.q);
+    int** C3 = MultiplyMatrixxMatrixOverQ(C1, C2, lwe.N, lwe.N, lwe.N, lwe.q);
     return applyRows(C3, lwe.N, lwe.N, &Flatten, lwe);
 }
 
-int **HomomorphicMultByConst(int **C1, int a, lwe_instance lwe)
+int** HomomorphicMultByConst(int** C1, int a, lwe_instance lwe)
 {
-    int **mIdentity = GenerateIdentityMultipliedByConst(lwe.N, lwe.N, a);
+    int** mIdentity = GenerateIdentityMultipliedByConst(lwe.N, lwe.N, a);
 
     // Ma = Flatten (In * a)
-    int **Ma = applyRows(mIdentity, lwe.N, lwe.N, &Flatten, lwe);
-    int **C3 = MultiplyMatrixxMatrixOverQ(C1, Ma, lwe.N, lwe.N, lwe.N, lwe.N, lwe.q);
+    int** Ma = applyRows(mIdentity, lwe.N, lwe.N, &Flatten, lwe);
+    int** C3 = MultiplyMatrixxMatrixOverQ(C1, Ma, lwe.N, lwe.N, lwe.N, lwe.q);
     // Flatten (Ma * C)
     return applyRows(C3, lwe.N, lwe.N, &Flatten, lwe);
 }
 
-int **HomomorphicAND(int **C1, int **C2, lwe_instance lwe)
+int** HomomorphicAND(int** C1, int** C2, lwe_instance lwe)
 {
     // C3 = C1 * C2
-    int **C3 = MultiplyMatrixxMatrixOverQ(C1, C2, lwe.N, lwe.N, lwe.N, lwe.N, lwe.q);
+    int** C3 = MultiplyMatrixxMatrixOverQ(C1, C2, lwe.N, lwe.N, lwe.N, lwe.q);
     return applyRows(C3, lwe.N, lwe.N, &Flatten, lwe);
 }
 
-int **HomomorphicNOT(int **C1, lwe_instance lwe)
+int** HomomorphicNOT(int** C1, lwe_instance lwe)
 {
-    int **Identity = GenerateIdentity(lwe.N, lwe.N);
+    int** Identity = GenerateIdentity(lwe.N, lwe.N);
 
     // C4 = In - C1
-    int **C4 = SubMatrixxMatrix(Identity, C1, lwe.N, lwe.N);
+    int** C4 = SubMatrixxMatrix(Identity, C1, lwe.N, lwe.N);
     // Flatten (C4)
     return applyRows(C4, lwe.N, lwe.N, &Flatten, lwe);
 }
 
-int **HomomorphicNAND(int **C1, int **C2, int **Identity, lwe_instance lwe)
+int** HomomorphicNAND(int** C1, int** C2, int** Identity, lwe_instance lwe)
 {
     // C3 = C1 * C2
-    int **C3 = MultiplyMatrixxMatrixOverQ(C1, C2, lwe.N, lwe.N, lwe.N, lwe.N, lwe.q);
+    int** C3 = MultiplyMatrixxMatrixOverQ(C1, C2, lwe.N, lwe.N, lwe.N, lwe.q);
     // C4 = C3 - In
-    int **C4 = SubMatrixxMatrix(Identity, C3, lwe.N, lwe.N);
+    int** C4 = SubMatrixxMatrix(Identity, C3, lwe.N, lwe.N);
     // Flatten (C1 * C2 - In)
     return applyRows(C4, lwe.N, lwe.N, &Flatten, lwe);
 }
 
-int **HomomorphicXOR(int **C1, int **C2, lwe_instance lwe)
+int** HomomorphicXOR(int** C1, int** C2, lwe_instance lwe)
 {
     return HomomorphicSum(C1, C2, lwe);
 }
 
-cbyte ByteEncrypt(byte b, int **pubKey, lwe_instance lwe)
+cbyte ByteEncrypt(byte b, int** pubKey, lwe_instance lwe)
 {
-    int ***c = (int ***)malloc(sizeof(int **) * BYTE_LENGTH);
+    int*** c = (int***)malloc(sizeof(int**) * BYTE_LENGTH);
     for (int j = 0; j < BYTE_LENGTH; j++)
     {
         int p = (b >> j) & 1; //  int p = (int) (pow(2, i));
@@ -303,9 +347,9 @@ cbyte ByteEncrypt(byte b, int **pubKey, lwe_instance lwe)
     return c;
 }
 
-uint8_t ByteDecrypt(cbyte b, int *v, lwe_instance lwe)
+uint8_t ByteDecrypt(cbyte b, int* v, lwe_instance lwe)
 {
-    uint8_t *c = (uint8_t *)malloc(sizeof(unsigned char));
+    uint8_t* c = (uint8_t*)malloc(sizeof(unsigned char));
 
     for (int j = 0; j < BYTE_LENGTH; j++)
     {
@@ -318,7 +362,7 @@ uint8_t ByteDecrypt(cbyte b, int *v, lwe_instance lwe)
 
 cbyte ByteAND(cbyte a, cbyte b, lwe_instance lwe)
 {
-    cbyte c = (int ***)malloc(sizeof(int **) * BYTE_LENGTH);
+    cbyte c = (int***)malloc(sizeof(int**) * BYTE_LENGTH);
     for (int j = 0; j < BYTE_LENGTH; j++)
     {
         c[j] = HomomorphicAND(a[j], b[j], lwe);
@@ -329,7 +373,7 @@ cbyte ByteAND(cbyte a, cbyte b, lwe_instance lwe)
 
 cbyte ByteXOR(cbyte a, cbyte b, lwe_instance lwe)
 {
-    cbyte c = (int ***)malloc(sizeof(int **) * BYTE_LENGTH);
+    cbyte c = (int***)malloc(sizeof(int**) * BYTE_LENGTH);
     for (int j = 0; j < BYTE_LENGTH; j++)
     {
         c[j] = HomomorphicXOR(a[j], b[j], lwe);
@@ -338,7 +382,7 @@ cbyte ByteXOR(cbyte a, cbyte b, lwe_instance lwe)
     return c;
 }
 
-void printBitVector(uint8_t *v, int size)
+void printBitVector(uint8_t* v, int size)
 {
     printf("Bit Vector:");
     for (int n = 0; n < size; n++)
@@ -352,7 +396,7 @@ void printBitVector(uint8_t *v, int size)
     printf("\n");
 }
 
-void setBit(uint8_t *byte, int pos, int value)
+void setBit(uint8_t* byte, int pos, int value)
 {
     if (value)
         *byte |= (1 << pos);
@@ -360,7 +404,7 @@ void setBit(uint8_t *byte, int pos, int value)
         *byte &= ~(1 << pos);
 }
 
-void setBitInteger(int *byte, int pos, int value)
+void setBitInteger(int* byte, int pos, int value)
 {
     if (value)
     {
@@ -372,11 +416,11 @@ void setBitInteger(int *byte, int pos, int value)
     }
 }
 
-uint8_t *compressBitArray(int *array, int intSize, int *bitSize)
+uint8_t* compressBitArray(int* array, int intSize, int* bitSize)
 {
     *bitSize = (int)ceil(((double)intSize / (double)BYTE_LENGTH));
     // printf("newSize %d ", *bitSize);
-    uint8_t *newArray = (uint8_t *)malloc(sizeof(uint8_t) * *bitSize);
+    uint8_t* newArray = (uint8_t*)malloc(sizeof(uint8_t) * *bitSize);
     for (int j = 0; j < *bitSize; j++)
     { // cada linha da matriz
         for (int i = 0; i < BYTE_LENGTH; i++)
@@ -388,10 +432,10 @@ uint8_t *compressBitArray(int *array, int intSize, int *bitSize)
     return newArray;
 }
 
-int *decompressBitArray(uint8_t *array, int intSize)
+int* decompressBitArray(uint8_t* array, int intSize)
 {
     int bitSize = (int)ceil(((double)intSize / (double)BYTE_LENGTH));
-    int *newArray = (int *)malloc(sizeof(int) * bitSize * BYTE_LENGTH);
+    int* newArray = (int*)malloc(sizeof(int) * bitSize * BYTE_LENGTH);
     for (int j = 0; j < bitSize; j++)
     { // cada linha da matriz
         for (int i = 0; i < BYTE_LENGTH; i++)
@@ -410,31 +454,31 @@ int *decompressBitArray(uint8_t *array, int intSize)
     return newArray;
 }
 
-void WriteFileCByte(FILE *file, cbyte a, lwe_instance lwe)
+void WriteFileCByte(FILE* file, cbyte a, lwe_instance lwe)
 {
     int bitSize;
     for (int i = 0; i < BYTE_LENGTH; i++)
     { // cada bit do byte
         for (int j = 0; j < lwe.N; j++)
         { // cada linha da matriz
-            uint8_t *m = compressBitArray(a[i][j], lwe.N, &bitSize);
+            uint8_t* m = compressBitArray(a[i][j], lwe.N, &bitSize);
             fwrite(m, sizeof(uint8_t), bitSize, file); // copia cada inteiro
         }
     }
 }
 
-cbyte ReadFileCByte(FILE *file, lwe_instance lwe)
+cbyte ReadFileCByte(FILE* file, lwe_instance lwe)
 {
-    cbyte cb = (int ***)malloc(sizeof(int **) * BYTE_LENGTH);
+    cbyte cb = (int***)malloc(sizeof(int**) * BYTE_LENGTH);
 
     for (int i = 0; i < BYTE_LENGTH; i++)
     {
-        cb[i] = (int **)malloc(sizeof(int *) * lwe.N);
+        cb[i] = (int**)malloc(sizeof(int*) * lwe.N);
 
         for (int j = 0; j < lwe.N; j++)
         {
             int bitSize = (int)ceil(((double)lwe.N / (double)BYTE_LENGTH));
-            uint8_t *m = (uint8_t *)malloc(sizeof(uint8_t) * bitSize);
+            uint8_t* m = (uint8_t*)malloc(sizeof(uint8_t) * bitSize);
 
             fread(m, sizeof(uint8_t), bitSize, file);
 

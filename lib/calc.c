@@ -5,14 +5,14 @@
 
 int mod(int m, int l) {
     if (m < 0) {
-        return l + (m % l);
+        return (l - (-m % (l))) % l;
     }
 
     return m % l;
 }
 
 int rand_ringz(int q) {
-    return (rand() % ((q))); // (rand() % (upper - lower + 1)) + (lower); // estava +1  
+    return mod(rand(), q); // (rand() % (upper - lower + 1)) + (lower);
 }
 
 int rand_error(int max_error) {
@@ -164,7 +164,7 @@ int** SubMatrixxMatrix(int** m1, int** m2, int r, int c) {
     return result;
 }
 
-int** MultiplyMatrixxMatrixOverQ(int** m1, int** m2, int r1, int c1, int r2, int c2, int q) {
+int** MultiplyMatrixxMatrixOverQ(int** m1, int** m2, int r1, int c1, int c2, int q) {
     int** result = (int**)malloc(sizeof(int*) * r1);
 
     for (int i = 0; i < r1; i++) {
@@ -294,7 +294,7 @@ int* GenerateBinaryVector(int size) {
     return vector;
 }
 
-void FreeMatrix(int ** matrix, int rows) {
+void FreeMatrix(int** matrix, int rows) {
 
     for (int i = 0; i < rows; i++) {
         free(matrix[i]);
