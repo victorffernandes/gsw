@@ -6,6 +6,7 @@
 #include "calc.c"
 
 enum BitSecurity {
+    SECURITY_ANY = -1,
     SECURITY_32 = 0,
     SECURITY_64 = 1,
     SECURITY_128 = 2,
@@ -37,6 +38,11 @@ lwe_instance GenerateLweInstance(BitSecurity lambda)
 
     switch (l->lambda)
     {
+    case SECURITY_ANY:
+        l->n = 10;
+        l->q = 1 << 10;
+        l->B = 2;
+        break;
     case SECURITY_32:
         l->n = 35;
         l->q = 1 << 12;
@@ -64,8 +70,8 @@ lwe_instance GenerateLweInstance(BitSecurity lambda)
     l->N = (l->n + 1) * l->l; // 
     l->m = 2 * l->n * (l->l + 1);
 
-    // printf("q: %d, n: %d, l: %d, N: %d m: %d", l->q, l->n, l->l, l->N, l->m);
-    printf("\n q/B: %d, L: 1,  8 (N+1)^L: %f ", l->q / (l->B - 1), 8.0f * pow(l->N + 1, 1));
+    printf("q: %d, n: %d, l: %d, N: %d m: %d", l->q, l->n, l->l, l->N, l->m);
+    // printf("\n q/B: %d, L: 1,  8 (N+1)^L: %f ", l->q / (l->B - 1), 8.0f * pow(l->N + 1, 1));
     return *l;
 }
 

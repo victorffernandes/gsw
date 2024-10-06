@@ -14,7 +14,24 @@
         "limits": "cpp",
         "semaphore": "cpp",
         "algorithm": "cpp",
-        "ratio": "cpp"
+        "ratio": "cpp",
+        "ios": "cpp",
+        "bitset": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp",
+        "__hash_table": "cpp",
+        "__split_buffer": "cpp",
+        "__tree": "cpp",
+        "deque": "cpp",
+        "map": "cpp",
+        "queue": "cpp",
+        "set": "cpp",
+        "unordered_map": "cpp",
+        "functional": "cpp",
+        "__locale": "cpp",
+        "cmath": "cpp",
+        "thread": "cpp",
+        "locale": "cpp"
     }
 
 }

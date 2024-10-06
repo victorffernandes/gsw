@@ -3,11 +3,12 @@
 #include "gsw.c"
 #include <iostream>
 #include <time.h>
-
-#ifdef __CUDACC__
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
+#include <cooperative_groups.h>
 #define THREADLIMITPERBLOCK 1024
+
+namespace cg = cooperative_groups;
 
 #define CHECK_CUDA_ERROR(val) check((val), #val, __FILE__, __LINE__)
 template <typename T>
@@ -54,6 +55,8 @@ dim3 getBlockForMatrix(int rows, int columns)
     }
 
     dim3 block(pw, 1, 1);
+    printf("block %d;", pw);
+
 
     return block;
 }
@@ -73,6 +76,8 @@ dim3 getGridForMatrix(int rows, int columns)
 
     dim3 grid(requiredNumberOfThreadsPerBlock, 1, 1);
 
+    printf("grid %d;", requiredNumberOfThreadsPerBlock);
+
     return grid;
 }
 
@@ -88,7 +93,7 @@ __global__ void PrintStream(int id)
 {
     printf(" %d ", id);
 }
-
+// MatMultiplication << <gridNn1, blockNn1, 0, st >> > (device_R, device_pubKey, device_RA, lwe.N, (lwe.n + 1), lwe.m, lwe);
 __global__ void MatMultiplication(int* lm1, int* cm2, int* rm3, int row, int column, int width, lwe_instance lwe)
 {
     int id = threadIdx.x + blockIdx.x * blockDim.x;
@@ -176,7 +181,7 @@ __global__ void GPUGenerateR(int* device_r, int size, int seed)
 
 __global__ void GPUGenerateMessageIdentity(int* device_message_identity, int row, int column, int message)
 {
-    int id = threadIdx.x + blockIdx.x * blockDim.x; //
+    int id = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (id < row * column)
     {
@@ -189,6 +194,115 @@ __global__ void GPUGenerateMessageIdentity(int* device_message_identity, int row
             device_message_identity[id] = 0;
         }
     }
+}
+
+__global__ void GPUEncryptKernel(int message, lwe_instance lwe, int* pubKey, int* device1NxN, int* device2NxN, int* deviceNn1, int* deviceNm, int seed)
+{
+    cg::thread_block block = cg::this_thread_block();
+
+    int id = threadIdx.x + blockIdx.x * blockDim.x;
+    int sizeNxN = lwe.N * lwe.N;
+    int sizeNxm = lwe.N * lwe.m;
+    int sizeNxn1 = lwe.N * (lwe.n + 1);
+
+    // extern int s[];
+
+    // // Generate R [N m]
+
+    // int b = 32;
+    // if (id % b == 0)
+    // {
+    //     curandState state;
+
+    //     curand_init(seed, 3, id, &state);
+    //     int a = curand(&state);
+    //     s[id / b] = a;
+    // }
+
+    // __syncthreads();
+    // if (id < sizeNxm) { // 30 * 60
+    //     // printf("id %d \n", id);
+    //     deviceNm[id] = (s[id / b] >> (id % b)) & 1;
+    // }
+
+    // __syncthreads();
+
+    // Generate RA [N m] OK
+
+    if (id <= sizeNxn1)
+    {
+        int ci = (id % (lwe.n + 1));
+        int ri = (id / ((lwe.n + 1)));
+        int sum = 0;
+        for (int i = 0; i < lwe.m; i++)
+        {
+            sum += deviceNm[ri * (lwe.m) + i] * pubKey[(lwe.n + 1) * i + ci]; // [N m] * [m n+1]
+        }
+        deviceNn1[id] = sum % lwe.q;
+    }
+
+    __syncthreads();
+
+    // Generate BitDecomp(RA) [N N] OK
+
+    if (id <= sizeNxn1)
+    {
+        for (int i = 0; i < lwe.l; i++)
+        {
+            device2NxN[id * lwe.l + i] = (deviceNn1[id] >> i) & 1;
+        }
+    }
+
+    __syncthreads();
+    __threadfence();
+    __threadfence_block();
+    __threadfence_system();
+    block.sync();
+
+
+    if (id <= sizeNxN) // OK
+    {
+        int ci = (id % lwe.N);
+        int ri = (id / lwe.N);
+        if (ci == ri)
+        {
+            atomicAdd(&device2NxN[id], message);
+            //device2NxN[id] += message;
+        }
+    }
+
+    __syncthreads();
+    __threadfence();
+    __threadfence_block();
+    __threadfence_system();
+    block.sync();
+
+    // Flatten [N N] -> [N n+1]
+
+    // GPUBitDecompInverse
+
+    // if (id < sizeNxn1 + 1)
+    // {
+    //     int r = 0;
+    //     for (int i = 0; i < lwe.l; i++)
+    //     {
+    //         r += (1 << i) * device2NxN[id * lwe.l + i];
+    //     }
+    //     deviceNn1[id] = r % lwe.q;
+    // }
+
+    // __syncthreads();
+
+    // // // GPUBitDecomp
+
+    // if (id < sizeNxn1)
+    // {
+    //     for (int i = 0; i < lwe.l; ++i)
+    //     {
+    //         device1NxN[id * lwe.l + i] = (deviceNn1[id] >> i) & 1;
+    //     }
+    // }
+
 }
 
 void GPUFlatten(int* device_lin_mat, int* device_lin_mat_temp, lwe_instance lwe, cudaStream_t st)
@@ -361,19 +475,95 @@ int is_gpu_enabled()
     return deviceCount > 0;
 }
 
-#endif
-
-#ifndef __CUDACC__
-
-int is_gpu_enabled()
-{
-    return false;
-}
-
-#endif
-
 
 int main() {
-    printf("aaaaa\n");
-    printf("aaaaa %d \n", is_gpu_enabled());
+    lwe_instance lwe = GenerateLweInstance(SECURITY_ANY);
+
+    int* t = GenerateVector(lwe.n, lwe); // [n]
+    int* secretKey = SecretKeyGen(t, lwe); // [n + 1]
+    int** publicKey = PublicKeyGen(t, lwe); // pubK [m, n+1]
+    int** R = GenerateBinaryMatrix(lwe.N, lwe.m); // pubK [m, n+1]
+
+    dim3 gridNm = getGridForMatrix(lwe.N, lwe.m);
+    dim3 blockNm = getBlockForMatrix(lwe.N, lwe.m);
+
+    // mem alloc
+    int* devicePubKey = MatrixAllocOnDevice(publicKey, lwe.m, lwe.n + 1); // [m, n+1]
+    int* device1NN = MatrixAllocEmptyOnDevice(lwe.N, lwe.N); // [N N]
+    int* device2NN = MatrixAllocEmptyOnDevice(lwe.N, lwe.N); // [N N]
+    int* device3NN = MatrixAllocEmptyOnDevice(lwe.N, lwe.N); // [N N]
+    int* deviceNn1 = MatrixAllocEmptyOnDevice(lwe.N, lwe.n + 1); // [N n+1]
+    int* deviceNm = MatrixAllocOnDevice(R, lwe.N, lwe.m); // [N m]
+
+    int message = 999;
+
+    // CPU CODE
+    int** m_ = Encrypt(message, publicKey, lwe);
+
+    int** RA = MultiplyMatrixxMatrixOverQ(R, publicKey, lwe.N, lwe.m, lwe.n + 1, lwe.q); // [N, n+1]
+
+    int** BitDecomRA = applyRows(RA, lwe.N, lwe.n + 1, &BitDecomp, lwe); // r [N, N]
+
+    // // m * In
+    int** Identity = GenerateIdentity(lwe.N, lwe.N);
+    int** mIdentity = MultiplyMatrixEscalarOverQ(message, Identity, lwe.N, lwe.N, lwe.q); // [N, N]
+
+    // m*In + BitDecomp(R * A)
+    int** sum = SumMatrixxMatrix(mIdentity, BitDecomRA, lwe.N, lwe.N); // [N, N]
+
+    int** inverse = applyRows(sum, lwe.N, lwe.N, &BitDecompInverse, lwe); // r [N, n+1]
+
+    // printMatrix(inverse, lwe.N, lwe.n + 1, "Inverse BitDecomp CPU");
+    printMatrix(sum, lwe.N, lwe.N, "sum CPU");
+    // -------------------------
+    // int* cudaMessage = cudaMalloc(&message, sizeof(int));
+    cudaDeviceSynchronize();
+    GPUEncryptKernel << <gridNm, blockNm, 0, 0 >> > (message, lwe, devicePubKey, device1NN, device2NN, deviceNn1, deviceNm, 0);
+
+    cudaDeviceSynchronize();
+
+    CHECK_LAST_CUDA_ERROR();
+
+    // int sizeNn1 = lwe.N * (lwe.n + 1);
+    // int* resultNn1 = (int*)malloc(sizeof(int) * sizeNn1);
+    // CHECK_CUDA_ERROR(cudaMemcpy(resultNn1, deviceNn1, sizeNn1 * sizeof(int), cudaMemcpyDeviceToHost));
+    // // printVector(resultNn1, sizeNn1, "deviceNn1");
+
+    // int sizeNm = lwe.N * (lwe.m);
+    // int* resultNm = (int*)malloc(sizeof(int) * sizeNm);
+    // CHECK_CUDA_ERROR(cudaMemcpy(resultNm, deviceNm, sizeNm * sizeof(int), cudaMemcpyDeviceToHost));
+    // // printVector(resultNm, sizeNm, "deviceNm");
+
+    // int size1NN = lwe.N * lwe.N;
+    // int* result1NN = (int*)malloc(sizeof(int) * size1NN);
+    // CHECK_CUDA_ERROR(cudaMemcpy(result1NN, device1NN, size1NN * sizeof(int), cudaMemcpyDeviceToHost));
+    // // printVector(result1NN, size1NN, "device1NN");
+
+    // // int size2NN = lwe.N * lwe.N;
+    // // int* result2NN = (int*)malloc(sizeof(int) * size2NN);
+    // // CHECK_CUDA_ERROR(cudaMemcpy(result2NN, device2NN, size2NN * sizeof(int), cudaMemcpyDeviceToHost));
+    // // printVector(result2NN, size2NN, "device2NN");
+
+    // int sizePubKey = (lwe.n + 1) * lwe.m;
+    // int* resultPubKey = (int*)malloc(sizeof(int) * sizePubKey);
+    // CHECK_CUDA_ERROR(cudaMemcpy(resultPubKey, devicePubKey, sizePubKey * sizeof(int), cudaMemcpyDeviceToHost));
+    // // printVector(resultPubKey, sizePubKey, "devicePubKey");
+
+
+    int** result = GenerateEmpty(lwe.N, lwe.N);
+    MatrixAllocOnHostAsync(device2NN, result, lwe.N, lwe.N, 0);
+    printMatrix(result, lwe.N, lwe.N, "result");
+
+    int* v = Powersof2(secretKey, lwe);
+    int decrypt = Decrypt(result, v, lwe);
+    int decrypt_ = Decrypt(m_, v, lwe);
+
+    printf("decrypt gpu %d \n", decrypt);
+    printf("decrypt cpu %d \n", decrypt_);
+
+
+
+    // MatrixAllocOnHostAsync(device1NN, result, lwe.N, lwe.N, 0);
+
+    // printMatrix(result, lwe.N, lwe.N, "result");
 }

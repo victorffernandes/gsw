@@ -9,8 +9,6 @@
 
 const int MAX_CONCURRENT = 8000;
 
-#ifndef __CUDACC__
-
 void encrypt_image(cbyte* img_1_cPixels, uint8_t* data, int image_size, int** publicKey, lwe_instance lwe)
 {
 
@@ -59,8 +57,6 @@ void encrypt_image(cbyte* img_1_cPixels, uint8_t* data, int image_size, int** pu
         cudaDeviceSynchronize();
     }
 }
-
-#endif
 
 int main(int argc, char* argv[])
 {

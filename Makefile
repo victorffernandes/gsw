@@ -20,4 +20,4 @@ build-all:
 	make build-read-cipher-bmp
 
 run-gpu:
-	nvcc lib/acc_gsw.cu -o builds/gpu.o -lm -G --forward-unknown-to-host-linker && ./builds/gpu.o
+	nvcc lib/acc_gsw.cu -o builds/gpu.o -lm && ./builds/gpu.o
